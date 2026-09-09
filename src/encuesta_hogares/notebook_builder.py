@@ -1234,7 +1234,7 @@ def construir_celdas_metrica(numero: int, terminos_ya_explicados: set[str] | Non
 # ============================================================================
 # Panorama general de Brecha Digital: siempre se muestra si se eligió ese
 # bloque, sin importar qué métricas puntuales del 1 al 6 se hayan marcado
-# — ver paso 5 en .claude/agents/encuesta-hogares.md. No tiene número de
+# — ver paso 5 en .claude/instrucciones/encuesta-hogares.md. No tiene número de
 # catálogo propio.
 # ============================================================================
 

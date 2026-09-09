@@ -2,7 +2,7 @@
 
 Los nombres de columna (HOGARES_COLUMNS, PERSONAS_COLUMNS,
 CONDICIONES_VIVIENDA_COLUMNS) reflejan los códigos de variable de la ECH 2019.
-Antes de usar datos de otro año, el agente (ver .claude/agents/encuesta-hogares.md)
+Antes de usar datos de otro año, el agente (ver .claude/instrucciones/encuesta-hogares.md)
 verifica con pyreadstat que esos códigos sigan existiendo y con el mismo
 significado; si algo cambió, actualiza este archivo y lo deja documentado en
 docs/METODOLOGIA.md.
@@ -22,7 +22,7 @@ TIMEOUT_FORMULARIO_SEGUNDOS = 1800
 
 # Cada año de datos vive en su propia subcarpeta: data/{año}/H_....sav y
 # data/{año}/P_....sav. El agente crea esa subcarpeta antes de pedirle al
-# usuario que guarde los archivos ahí (ver .claude/agents/encuesta-hogares.md).
+# usuario que guarde los archivos ahí (ver .claude/instrucciones/encuesta-hogares.md).
 
 
 # No hay ninguna constante "archivo de Hogares por defecto" a propósito.
@@ -132,7 +132,7 @@ PERSONAS_COLUMNS = {
 # hogar). Los códigos de columna también cambiaron de nombre en varios
 # casos, y algunas variables se discontinuaron — todo esto se verificó
 # contra el diccionario oficial "Diccionario ECH 2024.pdf" y confirmado con
-# el usuario (ver .claude/agents/encuesta-hogares.md, paso 3):
+# el usuario (ver .claude/instrucciones/encuesta-hogares.md, paso 3):
 #
 # - id_hogar viene en "ID" (antes "numero"); departamento en "nom_dpto"
 #   (antes "nomdpto"); estrato en "ESTRED13" (antes "estred13", misma
@@ -319,7 +319,7 @@ POBPCOAC_GRUPOS = {
 # demográfica), UIT/ITU + A4AI ("Meaningful Connectivity"), y el paper de
 # Muñoz (UdelaR, Revista de Ciencias Sociales) que aplica el enfoque de
 # cohorte generacional a esta misma encuesta. Ver
-# .claude/agents/encuesta-hogares.md para el detalle y los links.
+# .claude/instrucciones/encuesta-hogares.md para el detalle y los links.
 # ============================================================================
 
 # Relación de parentesco con el jefe/a de hogar (e30) — 14 categorías del
@@ -394,7 +394,7 @@ def fies_file(anio: int | str) -> Path:
 
 def datos_disponibles(anio: int | str) -> dict:
     """Qué tipos de datos existen para un año determinado, para que el agente
-    sepa qué ofrecerle al usuario (ver .claude/agents/encuesta-hogares.md).
+    sepa qué ofrecerle al usuario (ver .claude/instrucciones/encuesta-hogares.md).
     "empleo" requiere los 12 archivos mensuales completos, no unos pocos —
     con menos de 12 no se puede promediar el año correctamente.
     """
@@ -439,7 +439,7 @@ UMBRAL_FIES = 0.5
 # Hogares. Cada hogar permanece en el panel 6 meses seguidos, así que las
 # métricas se calculan mes a mes (ponderadas por `w`) y se promedian entre
 # los 12 meses — nunca juntando los 12 CSV en un solo pool antes de
-# ponderar (ver .claude/agents/encuesta-hogares.md, sección de empleo).
+# ponderar (ver .claude/instrucciones/encuesta-hogares.md, sección de empleo).
 # ============================================================================
 
 

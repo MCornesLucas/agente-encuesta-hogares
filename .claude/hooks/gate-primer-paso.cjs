@@ -1,5 +1,5 @@
 // Hook PreToolUse: hace cumplir, a nivel de herramienta (no solo de texto
-// de instrucciones), la regla innegociable de .claude/agents/encuesta-hogares.md
+// de instrucciones), la regla innegociable de .claude/instrucciones/encuesta-hogares.md
 // de que el formulario de bienvenida (formularios.plantilla_bienvenida) es
 // siempre la primera accion de la conversacion. Antes de esa llamada por
 // Bash, solo se permite leer los tres documentos que el propio archivo del

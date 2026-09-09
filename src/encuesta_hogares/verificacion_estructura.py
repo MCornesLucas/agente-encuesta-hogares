@@ -176,7 +176,7 @@ def verificar_empleo(anio: int | str) -> list[ResultadoComparacion]:
     # El panel mensual debería tener la misma estructura los 12 meses - si un
     # mes difiere de los demás, promediar el año mezclaría cosas distintas
     # sin que nadie lo note (ver la regla de promediar mes a mes en
-    # .claude/agents/encuesta-hogares.md).
+    # .claude/instrucciones/encuesta-hogares.md).
     if len(columnas_por_mes) > 1:
         primer_nombre, primeras_cols = next(iter(columnas_por_mes.items()))
         for nombre, cols in columnas_por_mes.items():

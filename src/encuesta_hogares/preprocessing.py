@@ -313,7 +313,7 @@ def compute_cohorte_generacional(hogares_con_jefe: pd.DataFrame, anio: int) -> p
     persona: la única variable de tenencia individual (celular, e60) se
     discontinuó en el cuestionario 2024, así que basar esto en edad
     individual rompería para ese año (ver nota de "ruido de 2019" en
-    .claude/agents/encuesta-hogares.md).
+    .claude/instrucciones/encuesta-hogares.md).
     """
     anio_nacimiento = anio - hogares_con_jefe["jefe_edad"]
     return pd.cut(anio_nacimiento, bins=config.COHORTE_BINS, labels=config.COHORTE_LABELS)
@@ -323,7 +323,7 @@ def clasificar_calidad_conexion(df_extendido: pd.DataFrame) -> pd.Series:
     """Clasifica la conexión de cada hogar en 3 niveles ordinales, en vez
     de la variable binaria tiene/no tiene internet: "Sin conexión", "Solo
     móvil", "Banda ancha fija" — inspirado en el estándar "Meaningful
-    Connectivity" de UIT/A4AI (ver .claude/agents/encuesta-hogares.md).
+    Connectivity" de UIT/A4AI (ver .claude/instrucciones/encuesta-hogares.md).
     Si el hogar tiene banda ancha fija, esa gana aunque también tenga
     móvil (es la conexión de mejor calidad de las dos).
     """

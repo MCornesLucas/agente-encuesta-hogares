@@ -1,35 +1,22 @@
----
-name: encuesta-hogares
-description: Usar este agente cuando el usuario quiera analizar datos de la Encuesta Continua de Hogares (ECH) del INE Uruguay en este proyecto. Es un agente 100% guiado por formularios visuales en el navegador — su primera acción SIEMPRE es abrir un formulario de bienvenida, nunca construir nada directamente ni asumir el alcance a partir del pedido inicial, aunque el pedido ya mencione un año o diga "estándar". Se activa con pedidos como "hacé el análisis con los datos de 2024", "quiero analizar la ECH de este año", "agregá una pregunta sobre X al análisis", o cuando el usuario menciona haber conseguido nuevos microdatos del INE — con cualquiera de esos pedidos, delegar la tarea completa a este agente y dejar que él se encargue de todas las preguntas de alcance a través de sus propios formularios, sin responderlas ni asumirlas de antemano.
-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch
-model: claude-opus-5
----
+# Instrucciones del flujo guiado de la Encuesta Continua de Hogares
 
-<!--
-El modelo se fija a propósito, con el id completo y no con el alias
-"opus". Sin este campo, el subagente hereda el modelo de la sesión
-principal, que a su vez toma el default de la cuenta: eso significa que
-el modelo con el que se genera un informe podía cambiar sin que nadie
-tocara el proyecto (si cambia el default de la cuenta, o si alguien usa
-/model en otra sesión). Para algo que se publica como informe con
-respaldo metodológico, esa variabilidad silenciosa no es aceptable.
+Estas instrucciones las sigue **la misma sesión de Claude Code** que abre
+`abrir_agente.bat`: se importan desde `CLAUDE.md` y no hay ningún
+subagente de por medio. Hasta la v0.14.1 vivían en `.claude/agents/` como
+un subagente al que la sesión principal delegaba cada pedido — eso sumaba
+un segundo modelo por corrida y una carga de contexto entera solo para
+delegar. En el texto, "el agente" es esta sesión.
 
-Por qué el más capaz: los 42 cálculos del catálogo NO dependen del
-modelo (los hace analysis.py, con tests y validación contra datos
-reales). Pero la comparación entre años y las métricas a medida del paso
-6 sí se escriben en código libre en cada corrida — ahí el criterio del
-modelo es lo único que separa un cálculo correcto de uno inventado, y es
-justo donde un número puede terminar difiriendo del INE sin
-justificación.
-
-El id completo (no el alias) es deliberado: un alias se movería solo a
-la próxima generación de Opus, y este proyecto prefiere que ese cambio
-sea una decisión explícita, con una corrida de validación de por medio.
-Al actualizarlo, cambiar también abrir_agente.bat, que fija el mismo
-modelo para la sesión principal.
--->
-
-
+Modelo fijado para las corridas: `claude-opus-5`, en `abrir_agente.bat`
+(`claude --model ...`). Con el id completo y no con el alias "opus": un
+alias se movería solo a la próxima generación del modelo, y este proyecto
+prefiere que ese cambio sea una decisión explícita, con una corrida de
+validación de por medio. Por qué el más capaz: los 42 cálculos del
+catálogo no dependen del modelo (los hace `analysis.py`, con tests y
+validación contra datos reales), pero las comparaciones entre años y las
+métricas a medida del paso 6 se escriben en código libre en cada corrida
+— ahí el criterio del modelo es lo único que separa un cálculo correcto de
+uno inventado.
 Este es el agente de análisis de la Encuesta Continua de Hogares (ECH, INE
 Uruguay) de este proyecto. Su trabajo es guiar a una persona **sin
 conocimientos técnicos** a través de todo el proceso: desde ubicar los datos

@@ -61,10 +61,9 @@ if exist "%MARCA_CIERRE%" del "%MARCA_CIERRE%" >nul 2>nul
 
 REM --model se fija a proposito: sin el, la sesion toma el modelo por
 REM defecto de la cuenta, que puede cambiar sin que nadie toque el
-REM proyecto. El subagente ya fija el suyo en el frontmatter de
-REM .claude/agents/encuesta-hogares.md (ahi esta el motivo largo); esto
-REM cubre tambien la sesion principal, para que una corrida sea
-REM reproducible de punta a punta. Si se actualiza uno, actualizar el otro.
+REM proyecto. Es el unico lugar que fija el modelo de la corrida (no hay
+REM subagente); .claude/instrucciones/encuesta-hogares.md lo declara con el
+REM motivo largo y un test exige que los dos digan lo mismo.
 claude --model claude-opus-5 "Quiero hacer la encuesta de hogares"
 
 REM Terminar el proceso de Claude Code hace que `claude` salga con codigo

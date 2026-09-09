@@ -1,5 +1,5 @@
 """Detecta referencias a "Paso N" en los docstrings de `formularios.py`
-que ya no coinciden con ningún paso real de `.claude/agents/encuesta-hogares.md`.
+que ya no coinciden con ningún paso real de `.claude/instrucciones/encuesta-hogares.md`.
 
 Nace de una evaluación de calidad real de este proyecto: se encontraron
 dos docstrings desactualizados — `plantilla_datos` decía "Pasos 2+3"
@@ -21,7 +21,7 @@ _RAIZ = Path(__file__).resolve().parents[2]
 # estaban en formularios.py, que las reexporta) — este chequeo escanea el
 # archivo donde están los `def` de verdad.
 _FORMULARIOS = _RAIZ / "src" / "encuesta_hogares" / "plantillas.py"
-_AGENTE = _RAIZ / ".claude" / "agents" / "encuesta-hogares.md"
+_AGENTE = _RAIZ / ".claude" / "instrucciones" / "encuesta-hogares.md"
 
 
 def pasos_reales_del_agente() -> set[str]:
@@ -51,7 +51,7 @@ def referencias_a_pasos_en_formularios() -> dict[str, str]:
 def referencias_a_pasos_inexistentes() -> dict[str, str]:
     """De `referencias_a_pasos_en_formularios()`, las que mencionan un
     número de paso que no existe (ya no, o nunca existió) en
-    `.claude/agents/encuesta-hogares.md` — la señal concreta de un
+    `.claude/instrucciones/encuesta-hogares.md` — la señal concreta de un
     docstring que quedó desactualizado."""
     reales = pasos_reales_del_agente()
     return {

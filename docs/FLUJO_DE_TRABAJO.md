@@ -98,7 +98,7 @@ Qué hace `entregar` (todo en `src/encuesta_hogares/generar_informe.py`):
 ## 3. Publicación (no es parte del flujo del agente)
 
 El agente **nunca** publica nada en GitHub ni se lo ofrece al usuario —
-ver el paso 9 de `.claude/agents/encuesta-hogares.md`. La mayoría de
+ver el paso 9 de `.claude/instrucciones/encuesta-hogares.md`. La mayoría de
 quienes usan el agente no tienen permiso de escritura sobre el
 repositorio, y mezclar código puntual de sesiones de usuario con el
 repositorio compartido lo llenaría de funciones muy específicas que no le
@@ -108,7 +108,7 @@ Decidir qué código o qué métrica de una sesión vale la pena incorporar al
 catálogo permanente es una decisión del dueño del proyecto — pero no una
 tarea que tenga que hacer a mano: se lo puede pedir directamente al
 agente por chat (nunca a través de un formulario, ver "Curación del
-catálogo" en `.claude/agents/encuesta-hogares.md`), y el agente hace el
+catálogo" en `.claude/instrucciones/encuesta-hogares.md`), y el agente hace el
 trabajo de generalizar el código, agregarlo al catálogo y testearlo. Esa
 posibilidad no existe para nadie más que esté usando el flujo guiado.
 

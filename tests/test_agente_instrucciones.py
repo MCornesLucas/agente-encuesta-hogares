@@ -1,4 +1,4 @@
-"""Chequeos estructurales sobre .claude/agents/encuesta-hogares.md.
+"""Chequeos estructurales sobre .claude/instrucciones/encuesta-hogares.md.
 
 No valida contenido (eso lo hace un humano leyéndolo) - valida que la
 estructura no se rompa por una edición futura, como pasó una vez: el paso
@@ -10,7 +10,7 @@ pero sí puede evitar que el orden de los pasos quede contradictorio.
 import re
 from pathlib import Path
 
-AGENTE_MD = Path(__file__).resolve().parents[1] / ".claude" / "agents" / "encuesta-hogares.md"
+AGENTE_MD = Path(__file__).resolve().parents[1] / ".claude" / "instrucciones" / "encuesta-hogares.md"
 
 
 def _pasos_en_orden_de_aparicion() -> list[float]:
@@ -98,10 +98,9 @@ def test_prohibe_correr_bash_en_segundo_plano():
 
 
 # ============================================================================
-# Modelo fijado. Sin el campo `model` en el frontmatter, el subagente hereda
-# el modelo de la sesión principal, que a su vez toma el default de la
-# cuenta: el modelo con el que se genera un informe podía cambiar sin que
-# nadie tocara el proyecto. Para algo que se publica con respaldo
+# Modelo fijado. Sin `--model` en abrir_agente.bat la sesión toma el default
+# de la cuenta: el modelo con el que se genera un informe podía cambiar sin
+# que nadie tocara el proyecto. Para algo que se publica con respaldo
 # metodológico, esa variabilidad silenciosa no sirve — y como los cálculos
 # libres (comparación entre años y métricas a medida) los escribe el modelo
 # en cada corrida, el modelo es parte de la reproducibilidad del resultado.
@@ -111,18 +110,21 @@ _BAT_ARRANQUE = Path(__file__).resolve().parents[1] / "abrir_agente.bat"
 
 
 def _modelo_del_frontmatter() -> str | None:
+    """El modelo declarado en las instrucciones ("Modelo fijado para las
+    corridas: `claude-opus-5`"). Ya no hay subagente ni frontmatter: la
+    sesión principal corre con el modelo que fija abrir_agente.bat, y las
+    instrucciones lo declaran para que el test los mantenga iguales."""
     texto = AGENTE_MD.read_text(encoding="utf-8")
-    frontmatter = texto.split("---", 2)[1] if texto.startswith("---") else ""
-    encontrado = re.search(r"^model:\s*(\S+)\s*$", frontmatter, flags=re.MULTILINE)
+    encontrado = re.search(r"Modelo fijado para las corridas: `([^`]+)`", texto)
     return encontrado.group(1) if encontrado else None
 
 
-def test_el_subagente_fija_su_modelo_con_id_completo():
+def test_las_instrucciones_declaran_el_modelo_con_id_completo():
     modelo = _modelo_del_frontmatter()
     assert modelo is not None, (
-        "El frontmatter de .claude/agents/encuesta-hogares.md no fija `model`: "
-        "sin eso el subagente hereda el default de la cuenta y el informe deja "
-        "de ser reproducible."
+        ".claude/instrucciones/encuesta-hogares.md no declara el modelo fijado "
+        "(«Modelo fijado para las corridas: `...`»): sin eso nada ata el modelo "
+        "de abrir_agente.bat a las instrucciones y el informe deja de ser reproducible."
     )
     assert modelo not in ("opus", "sonnet", "haiku", "fable", "inherit"), (
         f"`model: {modelo}` es un alias — se mueve solo a la próxima generación "
@@ -131,13 +133,13 @@ def test_el_subagente_fija_su_modelo_con_id_completo():
     )
 
 
-def test_el_bat_de_arranque_usa_el_mismo_modelo_que_el_subagente():
-    """Si los dos se despistan, la sesión principal y el subagente corren con
-    modelos distintos sin que nadie lo note."""
+def test_el_bat_de_arranque_usa_el_mismo_modelo_que_las_instrucciones():
+    """Si los dos se despistan, la corrida usa un modelo distinto del que
+    las instrucciones declaran, sin que nadie lo note."""
     modelo = _modelo_del_frontmatter()
     bat = _BAT_ARRANQUE.read_text(encoding="latin-1")
     assert f"--model {modelo}" in bat, (
-        f"abrir_agente.bat no fija el mismo modelo que el subagente ({modelo}). "
+        f"abrir_agente.bat no fija el mismo modelo que declaran las instrucciones ({modelo}). "
         "Al actualizar uno hay que actualizar el otro."
     )
 

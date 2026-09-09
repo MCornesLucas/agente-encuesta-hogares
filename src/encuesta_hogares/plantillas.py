@@ -242,7 +242,7 @@ _CATEGORIA_EMPLEO = ("6 · Empleo",
 # Igual que _CATEGORIA_EMPLEO: solo se ofrece si el usuario la eligió en
 # plantilla_areas(). No incluye percepción de seguridad (v1) — no hay
 # diccionario de valores publicado para esa variable, ver
-# .claude/agents/encuesta-hogares.md.
+# .claude/instrucciones/encuesta-hogares.md.
 _CATEGORIA_SEGURIDAD = ("7 · Seguridad y victimización",
     "Todas las preguntas de este bloque se refieren al MES ANTERIOR a la "
     "entrevista, no al año entero: si un número dice 5%, significa que el 5% "
@@ -567,7 +567,7 @@ def plantilla_catalogo(
     sugerencia real registrada en la bitácora: antes había que escribirlo
     a mano en "otra métrica" cada vez; ahora es una opción de primera
     clase del catálogo, y admite cualquier cantidad de años (no solo
-    uno). Ver .claude/agents/encuesta-hogares.md.
+    uno). Ver .claude/instrucciones/encuesta-hogares.md.
 
     **La comparación es por métrica, no todo o nada**: además de
     `comparar_anios` (los años, compartidos), la respuesta trae

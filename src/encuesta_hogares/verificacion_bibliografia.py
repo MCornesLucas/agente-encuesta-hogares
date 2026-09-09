@@ -60,7 +60,7 @@ def _seccion_visualizacion_de_datos(texto_bibliografia: str) -> str:
     """Recorta solo la sección "## Visualización de datos" (hasta el
     próximo "## ") — las demás secciones de BIBLIOGRAFIA.md son fuentes
     específicas de un bloque temático, citadas desde
-    `.claude/agents/encuesta-hogares.md` en vez de desde
+    `.claude/instrucciones/encuesta-hogares.md` en vez de desde
     CONVENCIONES_DE_GRAFICAS.md (ver el propio encabezado de
     BIBLIOGRAFIA.md) — no les aplica este chequeo.
     """

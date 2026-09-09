@@ -118,7 +118,7 @@ def sugerir_catalogo(metrica: str, motivo: str) -> None:
     usuario y espere respuesta: la consola de Claude Code corre en
     segundo plano para la enorme mayoría de quien usa este agente (nunca
     la abren, ni deberían necesitar hacerlo — ver "Qué Python usar" en
-    `.claude/agents/encuesta-hogares.md`), así que una pregunta bloqueante
+    `.claude/instrucciones/encuesta-hogares.md`), así que una pregunta bloqueante
     ahí no la vería nadie, y el proceso puede cerrarse apenas la persona
     termina o sale del flujo. Quedar registrado en un archivo que
     sobrevive al cierre es la única forma confiable de que esto no se
@@ -208,7 +208,7 @@ def resumir_sesion(eventos: list[dict]) -> ResumenSesion:
     # arman, en su lugar, tramos por diferencia entre puntos consecutivos.
     # Nace de un hueco real de 9m41s entre el formulario del catálogo y el
     # arranque de la carga de datos que la bitácora, hasta ahora, no podía
-    # explicar - ver paso 5 en .claude/agents/encuesta-hogares.md.
+    # explicar - ver paso 5 en .claude/instrucciones/encuesta-hogares.md.
     crudos = [e for e in eventos if e["tipo"] == "paso5_checkpoint"]
     checkpoints_paso5 = []
     anterior = None

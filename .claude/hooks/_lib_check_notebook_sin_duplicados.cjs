@@ -1,6 +1,6 @@
 // Verificación: celdas que terminan con la variable sola después de
 // asignarla con viz.plot_...(...) — con el renderer PNG de Plotly eso
-// muestra la gráfica dos veces (ver .claude/agents/encuesta-hogares.md,
+// muestra la gráfica dos veces (ver .claude/instrucciones/encuesta-hogares.md,
 // paso 5). Hasta la v0.13.6 era un hook propio (gate-notebook-sin-duplicados.cjs);
 // ahora es un módulo que `gate-notebook.cjs` corre junto con las otras dos
 // verificaciones del notebook, leyendo el .ipynb una sola vez. Sigue
@@ -37,7 +37,7 @@ function motivo(rutaNotebook, violaciones) {
   return (
     `El notebook "${rutaNotebook}" tiene ${violaciones.length} celda(s) que van a duplicar su gráfica ` +
     `en el output: ${detalle}. Cada una termina con la variable sola después de asignarla con ` +
-    `viz.plot_...(...) - eso duplica la imagen (ver .claude/agents/encuesta-hogares.md, paso 5). ` +
+    `viz.plot_...(...) - eso duplica la imagen (ver .claude/instrucciones/encuesta-hogares.md, paso 5). ` +
     `Editá esas celdas con nbformat para que terminen en "<variable>.show()" (Plotly) o sin volver a ` +
     `nombrar la variable (matplotlib), y recién ahí volvé a ejecutar el notebook.`
   );

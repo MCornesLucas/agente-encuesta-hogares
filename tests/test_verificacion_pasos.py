@@ -15,7 +15,7 @@ def test_ninguna_referencia_a_paso_en_formularios_quedo_desactualizada():
     detalle = "\n".join(f"  - {funcion}: dice 'Paso {paso}'" for funcion, paso in desactualizadas.items())
     assert not desactualizadas, (
         "Hay docstrings en formularios.py que mencionan un número de paso "
-        "que ya no existe en .claude/agents/encuesta-hogares.md — "
+        "que ya no existe en .claude/instrucciones/encuesta-hogares.md — "
         "revisar a qué paso corresponde de verdad la función y corregir "
         "el docstring:\n\n" + detalle
     )

@@ -358,8 +358,8 @@ agente-encuesta-hogares/
 ├── instalar.bat                 # Instala lo que falte (Node.js, Claude Code, dependencias)
 ├── abrir_agente.bat             # Abre el agente
 ├── .claude/
-│   └── agents/
-│       └── encuesta-hogares.md  # El agente: sus instrucciones de trabajo
+│   └── instrucciones/
+│       └── encuesta-hogares.md  # El flujo guiado: instrucciones que sigue la sesión (importadas por CLAUDE.md)
 ├── docs/
 │   ├── METODOLOGIA.md              # Reglas de rigor estadístico y claridad
 │   ├── FLUJO_DE_TRABAJO.md         # Procedimientos: verificación, PDF, publicación, año nuevo

@@ -60,7 +60,7 @@ formato `.sav` vs. CSV combinado, base nacional vs. filtrada a Montevideo).
 ## Agregar una métrica al catálogo
 
 Seguir el checklist de "Curación del catálogo" en
-[`.claude/agents/encuesta-hogares.md`](.claude/agents/encuesta-hogares.md)
+[`.claude/instrucciones/encuesta-hogares.md`](.claude/instrucciones/encuesta-hogares.md)
 — cubre desde qué pregunta responde la métrica hasta la numeración del
 catálogo (`_CATEGORIAS_METRICAS` en `plantillas.py`), que tiene que
 quedar sin huecos ni duplicados (hay un test que lo verifica:

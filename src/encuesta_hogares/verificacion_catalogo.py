@@ -318,7 +318,7 @@ def metricas_hogares_no_disponibles(anio: int | str) -> dict[int, list[str]]:
 def aviso_metricas_no_disponibles(anio: int | str) -> list[str]:
     """Mensajes ya redactados, uno por métrica de Empleo o de Vivienda no
     disponible para `anio` — para mostrarle al usuario ANTES de que elija
-    el catálogo (paso 4 de `.claude/agents/encuesta-hogares.md`), no
+    el catálogo (paso 4 de `.claude/instrucciones/encuesta-hogares.md`), no
     después de que la corrida falle. Lista vacía si no hay nada para
     avisar.
     """

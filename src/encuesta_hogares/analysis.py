@@ -567,7 +567,7 @@ def diferencia_entre_tablas(
 # ============================================================================
 # Hogares (composición, sin tecnología) y Brecha Digital (con marco
 # internacional) — ver la nota de fuentes en config.py y el detalle
-# metodológico en .claude/agents/encuesta-hogares.md.
+# metodológico en .claude/instrucciones/encuesta-hogares.md.
 # ============================================================================
 
 def pct_pobres_indigentes(hogares_extendido: pd.DataFrame) -> dict:
@@ -689,7 +689,7 @@ def pct_unipersonales_mayores(tipo_hogar: pd.DataFrame) -> dict:
     (su único integrante es, por definición, el jefe/a). CEPAL: en América
     Latina esto puede señalar vulnerabilidad, a diferencia de países
     desarrollados donde suele leerse como autonomía — ver nota en
-    .claude/agents/encuesta-hogares.md."""
+    .claude/instrucciones/encuesta-hogares.md."""
     unipersonales = tipo_hogar[tipo_hogar["tipo_hogar"] == "Unipersonal"].copy()
     total = len(unipersonales)
     if not total:
@@ -715,7 +715,7 @@ def brecha_digital_por_jefatura(df_extendido_con_jefatura: pd.DataFrame) -> pd.D
     género ya casi no está en la tenencia del hogar sino en el uso
     individual — no encontrar diferencia acá es un resultado consistente
     con esa literatura, no un resultado vacío (ver
-    .claude/agents/encuesta-hogares.md)."""
+    .claude/instrucciones/encuesta-hogares.md)."""
     return _brecha_digital_por(df_extendido_con_jefatura, "jefe_sexo")
 
 

@@ -1,23 +1,19 @@
 # Instrucciones para la sesión principal de Claude Code
 
-Este proyecto tiene un único agente especializado: `encuesta-hogares` (ver
-`.claude/agents/encuesta-hogares.md`). Cualquier pedido relacionado con
-analizar la Encuesta Continua de Hogares (ECH) del INE Uruguay —sin
-importar cuánto detalle traiga el pedido original ("hacé el análisis
-2024", "análisis estándar", "agregá una pregunta sobre X")— se delega
-entero a ese agente.
+Cualquier pedido relacionado con analizar la Encuesta Continua de
+Hogares (ECH) del INE Uruguay —sin importar cuánto detalle traiga el
+pedido ("hacé el análisis 2024", "análisis estándar", "agregá una pregunta
+sobre X")— se atiende en esta misma sesión siguiendo, paso por paso, las
+instrucciones del flujo guiado que se importan a continuación. No se
+delega a ningún subagente: hasta la v0.14.1 existía uno y cada corrida
+pagaba un segundo modelo y una carga de contexto solo para delegar.
 
-**Al delegar la tarea, pasar el pedido del usuario tal cual lo escribió,
-palabra por palabra, sin resumir, sin completar el año, sin interpretar
-qué quiso decir con "estándar", y sin agregar contexto adicional.** No
-armar un resumen de alcance ni una lista de lo entendido —eso es
-exactamente lo que el agente tiene que volver a preguntar él mismo, a
-través de su propio formulario, y un resumen ya armado compite con esa
-regla en vez de ayudarla.
+@.claude/instrucciones/encuesta-hogares.md
 
-No responder ninguna pregunta de alcance (año, métricas, formato de
-salida) antes de delegar —todas esas preguntas las hace el agente con
-sus propios formularios visuales.
+**Nunca responder ni asumir preguntas de alcance** (año, métricas,
+formato de salida) a partir del pedido escrito: todas se hacen con los
+formularios visuales del flujo, empezando SIEMPRE por el formulario de
+bienvenida, aunque el pedido ya mencione un año o diga "estándar".
 
 ## Mantenimiento del proyecto (para la sesión principal, no para el agente)
 

@@ -253,7 +253,7 @@ def mostrar_formulario(html: str, timeout: float | None = config.TIMEOUT_FORMULA
         return {"salir_del_flujo": True, "motivo": "timeout"}
 
     # Salir sin terminar el informe: acá se termina la conversación (ver
-    # .claude/agents/encuesta-hogares.md), así que también se cierra la
+    # .claude/instrucciones/encuesta-hogares.md), así que también se cierra la
     # consola. Se hace acá y no en las instrucciones del agente a
     # propósito: es el mismo criterio que los hooks del proyecto — una
     # regla que depende de que el modelo se acuerde de cumplirla en cada
@@ -274,7 +274,7 @@ def mostrar_finalizacion(pdf_path: str = "", html_path: str = "", timeout: float
 
     El resultado trae `{"accion": "terminar"}` o `{"accion": "nuevo_informe"}`
     — este último significa que el agente tiene que reiniciar el flujo desde
-    el paso 1 (ver .claude/agents/encuesta-hogares.md), no terminar la
+    el paso 1 (ver .claude/instrucciones/encuesta-hogares.md), no terminar la
     conversación.
     """
     resultado: dict = {}
