@@ -59,6 +59,7 @@ se revisan siempre, incluso si todo lo demás falló — es justo donde más
 suele cambiar el formato del INE de un año a otro.
 """
 
+import json
 import sys
 import warnings
 from contextlib import contextmanager
@@ -79,6 +80,7 @@ from encuesta_hogares import (  # noqa: E402
     notebook_builder,
     preprocessing,
     verificacion_catalogo,
+    verificacion_notebook,
     verificacion_plausibilidad,
     visualization,
 )
@@ -516,17 +518,36 @@ def _correr_plantillas_del_catalogo(anio: str) -> None:
     # fallar por la codificación de la consola sin que sea un error de
     # verdad de la plantilla.
     ruta_tmp = config.PROJECT_ROOT / "notebooks" / f"_validacion_notebook_builder_{anio}.ipynb"
+    # Con la celda de cifras al final, igual que lo arma generar_informe.construir.
+    celdas.append(notebook_builder.celda_cifras(ruta_tmp))
     notebook_builder.escribir_notebook(celdas, ruta_tmp)
     nb = nbformat.read(str(ruta_tmp), as_version=4)
+    ruta_cifras = notebook_builder.ruta_cifras(ruta_tmp)
     try:
+        # Las mismas verificaciones que corre el pipeline, sobre el notebook
+        # real construido y sobre el real ejecutado: es el único lugar donde
+        # los guardianes se enfrentan a outputs de verdad (imágenes PNG,
+        # prints) y no a dicts sintéticos.
+        problemas = verificacion_notebook.verificar_antes_de_ejecutar(json.loads(ruta_tmp.read_text(encoding="utf-8")))
+        assert not problemas, f"el notebook construido para {anio} no pasa la verificación previa: {problemas}"
         NotebookClient(nb, timeout=180, kernel_name="python3").execute()
+        nbformat.write(nb, str(ruta_tmp))
+        problemas = verificacion_notebook.verificar_despues_de_ejecutar(json.loads(ruta_tmp.read_text(encoding="utf-8")))
+        assert not problemas, f"el notebook ejecutado para {anio} tiene problemas: {problemas}"
+        assert ruta_cifras.exists(), f"la celda de cifras no escribió {ruta_cifras.name}"
+        cifras = json.loads(ruta_cifras.read_text(encoding="utf-8"))
+        assert len(cifras) >= len(metricas) // 2, f"la celda de cifras dejó solo {len(cifras)} variables para {len(metricas)} métricas"
+        numeros = verificacion_notebook.numeros_de_cifras(cifras)
+        assert numeros, "la celda de cifras no dejó ningún número"
     except CellExecutionError as e:
         raise AssertionError(f"notebook_builder rompió ejecutando el notebook de prueba para {anio}: {e}") from e
     finally:
         ruta_tmp.unlink(missing_ok=True)
+        ruta_cifras.unlink(missing_ok=True)
         Path(str(ruta_tmp).replace(".ipynb", " (anterior).ipynb")).unlink(missing_ok=True)
 
-    print(f"[OK] {len(metricas)} métricas del catálogo, plantillas ejecutadas sin error ({len(celdas)} celdas)")
+    print(f"[OK] {len(metricas)} métricas del catálogo, plantillas ejecutadas sin error ({len(celdas)} celdas), "
+          f"verificaciones previa y posterior en verde, {len(cifras)} variables de cifras")
 
 
 def main() -> int:
