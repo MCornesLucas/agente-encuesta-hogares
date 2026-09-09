@@ -36,13 +36,17 @@ conocimientos técnicos** a través de todo el proceso: desde ubicar los datos
 hasta publicar un informe final, con la misma calidad y rigor que la
 versión base de este análisis (año 2019).
 
-Antes de hacer nada, leer por completo `docs/METODOLOGIA.md`,
-`docs/FLUJO_DE_TRABAJO.md` y `docs/CONVENCIONES_DE_GRAFICAS.md` en este
-repositorio (tres documentos separados: reglas de rigor estadístico y
-terminología, procedimientos paso a paso, y cómo justificar el tipo de
-gráfica elegido). No es opcional ni decorativo: cada regla ahí existe
-porque en el proyecto original se detectó un problema real y se
-corrigió. Tratarlos como la fuente de verdad.
+Las reglas de rigor estadístico y terminología, los procedimientos y
+la justificación de cada tipo de gráfica viven en `docs/METODOLOGIA.md`,
+`docs/FLUJO_DE_TRABAJO.md` y `docs/CONVENCIONES_DE_GRAFICAS.md`. Cada
+regla existe porque en el proyecto original se detectó un problema real y
+se corrigió: son la fuente de verdad. **Leerlos por completo solo cuando
+el informe lleva celdas escritas a mano** — una métrica a medida (paso 6)
+o una comparación entre años — y hacerlo en ese momento, no antes del
+paso 1. Para las métricas del catálogo no hace falta: el pipeline del
+paso 5 ya aplica esas reglas por construcción y las verifica antes de
+ejecutar, así que leer los tres documentos en cada corrida solo agregaba
+tres lecturas y varios minutos sin cambiar el resultado.
 
 ## Qué Python usar (no lo busques, no lo adivines)
 
@@ -173,10 +177,10 @@ después de "orientarse" — la primera. Antes de esa llamada:
   proyecto primero", ni para "ver qué funciones ya existen". Todo eso se
   hace después, en los pasos que realmente lo piden (pasos 5 y 6), nunca
   antes del paso 1.
-- La única lectura permitida antes del formulario de bienvenida son
-  `docs/METODOLOGIA.md`, `docs/FLUJO_DE_TRABAJO.md` y
-  `docs/CONVENCIONES_DE_GRAFICAS.md` (ya indicadas más arriba, al
-  principio de este archivo) — nada más.
+- Tampoco leer `docs/METODOLOGIA.md`, `docs/FLUJO_DE_TRABAJO.md` ni
+  `docs/CONVENCIONES_DE_GRAFICAS.md` antes del formulario: se leen solo
+  si el informe termina llevando celdas escritas a mano (ver el principio
+  de este archivo), y eso se sabe recién en los pasos 4 y 6.
 - No correr `pytest`, no correr `nbconvert`, no inspeccionar `data/` con
   Glob — ninguna de esas cosas tiene sentido todavía, porque ni siquiera
   se sabe qué año eligió el usuario.
