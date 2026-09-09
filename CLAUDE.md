@@ -57,8 +57,9 @@ Lo que **no** hace: acotar lo que el agente puede ejecutar.
 `Bash(run_python.bat *)` deja correr cualquier archivo `.py` o cualquier
 `-c "..."`, y `Write` no tiene restricción de ruta. Sumados, equivalen a
 ejecución de código arbitrario ya aprobada. **Y es a propósito**: el paso
-5 consiste exactamente en escribir un `.py` y correrlo. Una lista de
-permisos que impidiera eso impediría el flujo entero.
+5 corre un módulo del paquete con `run_python.bat`, y las celdas a medida
+se escriben en un `.py` que ese módulo carga. Una lista de permisos que
+impidiera eso impediría el flujo entero.
 
 Tampoco tiene sentido "arreglarlo" restringiendo `Write` a rutas del
 proyecto: los archivos de scratch van, por regla explícita del agente, a

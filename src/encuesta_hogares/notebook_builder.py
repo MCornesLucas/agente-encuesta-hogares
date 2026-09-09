@@ -1280,6 +1280,7 @@ def celdas_intro_brecha_digital() -> list[Celda]:
 _CABECERA = '''%matplotlib inline
 import warnings
 
+import kaleido
 import pandas as pd
 import plotly.io as pio
 
@@ -1287,6 +1288,11 @@ from encuesta_hogares import analysis, bitacora, config, data_loader, entrega, p
 from encuesta_hogares import visualization as viz
 
 pio.renderers.default = "png"
+# Un solo Chromium para todas las gráficas: sin esto, kaleido 1.x lanza uno
+# nuevo por imagen y cada gráfica tarda ~2,3 s en vez de ~0,1 s (medido el
+# 2026-09-09: 47 gráficas eran 140 de los 150 s de ejecución del informe).
+if hasattr(kaleido, "start_sync_server"):
+    kaleido.start_sync_server(silence_warnings=True)
 warnings.filterwarnings("ignore")'''
 
 
@@ -1413,3 +1419,140 @@ def escribir_notebook(celdas: list[Celda], ruta: Path | str) -> Path:
     entrega.respaldar_si_existe(ruta)
     nbformat.write(nb, str(ruta))
     return ruta
+
+# ============================================================================
+# Cierre del informe: cifras para el resumen, resumen analítico y fuentes.
+#
+# Hasta la v0.13.6 el "Resumen analítico final" lo escribía el modelo
+# después de ejecutar el notebook, sacando los números "con Python, no de
+# memoria" — es decir, recalculando a mano — y lo insertaba con nbformat
+# para volver a ejecutar todo. Ahora el propio notebook deja las cifras de
+# cada métrica en un JSON (`celda_cifras`), el modelo redacta el resumen
+# leyendo ese archivo, y `generar_informe.entregar` lo agrega como
+# markdown SIN volver a ejecutar nada (agregar texto a un notebook ya
+# ejecutado no requiere kernel). La lista de fuentes por bloque, que el
+# modelo copiaba de las instrucciones del agente, sale de acá.
+# ============================================================================
+
+def ruta_cifras(ruta_notebook: Path | str) -> Path:
+    """El JSON de cifras vive al lado del notebook, con su mismo nombre:
+    `notebooks/_cifras_Informe_ECH_2025.json`."""
+    ruta_notebook = Path(ruta_notebook)
+    return ruta_notebook.with_name(f"_cifras_{ruta_notebook.stem}.json")
+
+
+def celda_cifras(ruta_notebook: Path | str) -> Celda:
+    """Última celda de código del informe: vuelca a JSON toda tabla o valor
+    que las métricas dejaron definido (DataFrames y Series de hasta 200
+    filas, dicts de números, escalares), redondeado a dos decimales. No
+    imprime nada — en el informe sin código es invisible — y no puede
+    romper el informe: cualquier variable que no se pueda serializar se
+    salta. Es la fuente de la que el modelo saca los números del resumen y
+    contra la que `generar_informe.entregar` valida cada cifra."""
+    destino = str(ruta_cifras(ruta_notebook)).replace("\\", "/")
+    codigo = f"""import json as _json
+import numbers as _numbers
+
+_cifras = {{}}
+for _nombre, _valor in list(globals().items()):
+    if _nombre.startswith("_") or _nombre in ("hogares", "personas", "personas_con_depto"):
+        continue
+    try:
+        if isinstance(_valor, pd.DataFrame) and 0 < len(_valor) <= 200:
+            _cifras[_nombre] = _json.loads(_valor.round(2).to_json(orient="records", force_ascii=False, date_format="iso"))
+        elif isinstance(_valor, pd.Series) and 0 < len(_valor) <= 200:
+            _cifras[_nombre] = _json.loads(_valor.round(2).to_json(force_ascii=False, date_format="iso"))
+        elif isinstance(_valor, dict) and _valor and all(isinstance(v, _numbers.Number) for v in _valor.values()):
+            _cifras[_nombre] = {{str(k): round(float(v), 2) for k, v in _valor.items()}}
+        elif isinstance(_valor, _numbers.Number) and not isinstance(_valor, bool):
+            _cifras[_nombre] = round(float(_valor), 2)
+        elif hasattr(_valor, "_asdict"):
+            _cifras[_nombre] = {{k: (round(float(v), 2) if isinstance(v, _numbers.Number) else str(v)) for k, v in _valor._asdict().items()}}
+    except Exception:
+        continue
+with open(r"{destino}", "w", encoding="utf-8") as _f:
+    _json.dump(_cifras, _f, ensure_ascii=False, indent=1, default=str)"""
+    return Celda(markdown="", codigo=codigo)
+
+
+# Fuentes consultadas para diseñar cada bloque (las mismas que listan las
+# instrucciones del agente, paso 4). FIES no lleva: sale de la metodología
+# original del proyecto, no de investigación externa.
+_FUENTES_POR_BLOQUE: dict[str, list[str]] = {
+    "brecha_digital": [
+        "CEPAL — Observatorio de Desarrollo Digital de América Latina y el Caribe: "
+        "https://desarrollodigital.cepal.org/es/indicadores",
+        "UIT/ITU — ICT Development Index: https://www.itu.int/en/ITU-D/Statistics/Pages/IDI/default.aspx",
+        "A4AI — estándar «Meaningful Connectivity»: "
+        "https://a4ai.org/news/what-is-meaningful-internet-access-conceptualising-a-holistic-ict4d-policy-framework/",
+        "Muñoz, R. — «Brechas de acceso digital: cambio histórico y ciclo vital», Revista de Ciencias "
+        "Sociales, UdelaR: https://rcs.cienciassociales.edu.uy/index.php/rcs/article/view/261",
+        "CEPAL — «La brecha digital de género: reflejo de la desigualdad social», Nota para la Igualdad N°10: "
+        "https://oig.cepal.org/sites/default/files/notas_para_la_igualdad_ndeg10_-_brecha_digital_de_genero.pdf",
+        "CEPALSTAT (CEPAL/CELADE) — jefatura de hogar, tipos de hogar, hacinamiento, razón de dependencia "
+        "demográfica: https://statistics.cepal.org/portal/cepalstat/",
+    ],
+    "territorio": [
+        "Rodríguez Miranda, A.; Vial Cossani, C.; Centurión, I.; Pérez Fernández, M. — «Índice de Desarrollo "
+        "Regional Uruguay 2006-2022 (IDERE-UY)», IECON-FCEA/UdelaR, ANII, 2024: "
+        "https://ideas.repec.org/p/ulr/wpaper/dt-01-24.html",
+        "CEPAL/ILPES — «Panorama del desarrollo territorial de América Latina y el Caribe»: "
+        "https://www.cepal.org/es/publicaciones/tipos/panorama-desarrollo-territorial-america-latina-caribe",
+        "CEPAL — «Guía metodológica para el diseño de indicadores compuestos de desarrollo sostenible», 2009: "
+        "https://repositorio.cepal.org/handle/11362/3663",
+    ],
+    "vivienda": [
+        "UN-Habitat/UNSD — Metadatos del indicador SDG 11.1.1 («durability of housing»), 2020: "
+        "https://unhabitat.org/sites/default/files/2020/06/metadata_on_sdg_indicator_11.1.1.pdf",
+        "Bramati, M. et al. — «Introducing the Adequate Housing Index (AHI)», World Bank Policy Research "
+        "Working Paper 9830, 2021: "
+        "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/936291631846076967",
+        "INE Uruguay, FCS-UdelaR, IECON, MIDES (coord. Calvo, J.J.) — «Atlas Sociodemográfico y de la "
+        "Desigualdad del Uruguay», Fascículo 1 (NBI), 2013: "
+        "https://www.ine.gub.uy/atlas-sociodemografico-y-de-la-desigualdad-del-uruguay",
+        "Arriagada, C. — «Perfil de déficit y políticas de vivienda de interés social», CELADE/CEPAL, 2003: "
+        "https://repositorio.cepal.org/handle/11362/5711",
+    ],
+    "empleo": [
+        "Indicadores Clave del Mercado de Trabajo (KILM) — OIT: "
+        "https://www.ilo.org/resource/key-indicators-labour-market-kilm",
+        "«Se profundizó la brecha de género en el mercado laboral» — Ámbito: "
+        "https://www.ambito.com/uruguay/se-profundizo-la-brecha-genero-el-mercado-laboral-n6096977",
+        "«El desempleo entre los más jóvenes cerró cerca del 25% en 2024» — Ámbito: "
+        "https://www.ambito.com/uruguay/el-desempleo-los-mas-jovenes-cerro-cerca-del-25-2024-n6108458",
+        "«Subempleo e informalidad afectan a casi 3 de cada 10 ocupados en Uruguay» — La Mañana: "
+        "https://www.xn--lamaana-7za.uy/actualidad/trabajo-subempleo-e-informalidad-afectan-a-casi-3-de-cada-10-ocupados-en-uruguay/",
+    ],
+    "seguridad": [
+        "Manual para Encuestas de Victimización — UNODC/UNECE: "
+        "https://www.unodc.org/documents/data-and-analysis/Crime-statistics/Manual_Victimization_surveys_2009_spanish.pdf",
+        "«Qué porcentaje de delitos son denunciados a la Policía, según informe del INE» — Montevideo Portal: "
+        "https://www.montevideo.com.uy/Noticias/Que-porcentaje-de-delitos-son-denunciados-a-la-Policia-segun-informe-del-INE-uc914924",
+    ],
+}
+# Hogares comparte las fuentes de Brecha Digital (así lo listan las
+# instrucciones del agente: "Brecha Digital y Hogares").
+_FUENTES_POR_BLOQUE["hogares"] = _FUENTES_POR_BLOQUE["brecha_digital"]
+
+
+def fuentes_de_consulta(bloques: list[str]) -> list[str]:
+    """Las fuentes de los bloques presentes, sin repetir y en el orden del
+    catálogo. Lista vacía si solo hay FIES (no lleva sección)."""
+    vistas: list[str] = []
+    for bloque in bloques:
+        for fuente in _FUENTES_POR_BLOQUE.get(bloque, []):
+            if fuente not in vistas:
+                vistas.append(fuente)
+    return vistas
+
+
+def celdas_resumen_final(markdown_resumen: str, bloques: list[str]) -> list[Celda]:
+    """La sección que cierra el informe: el resumen redactado (markdown ya
+    escrito, con cifras verificadas por `generar_informe.entregar`) y la
+    lista de fuentes de consulta de los bloques presentes."""
+    celdas = [Celda(markdown="## Resumen analítico final"), Celda(markdown=markdown_resumen.strip())]
+    fuentes = fuentes_de_consulta(bloques)
+    if fuentes:
+        lista = "\n".join(f"- {f}" for f in fuentes)
+        celdas.append(Celda(markdown="### Fuentes de consulta para alineación de métricas\n\n" + lista))
+    return celdas

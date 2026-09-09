@@ -210,3 +210,17 @@ def test_la_cantidad_de_metricas_que_dice_la_documentacion_es_la_real():
             if int(cantidad) != reales:
                 equivocados.append(f"{archivo.name}: dice {cantidad}, son {reales}")
     assert not equivocados, "\n".join(equivocados)
+
+
+def test_los_pasos_5_y_8_usan_el_pipeline_y_no_scripts_sueltos():
+    """Desde la v0.14.0 el informe se genera con dos comandos del paquete
+    (`generar_informe construir` y `generar_informe entregar`): el modelo
+    no escribe el script que arma el notebook, no invoca `nbconvert` por
+    su cuenta y no vuelve a ejecutar el notebook para agregar el resumen.
+    Si las instrucciones vuelven al camino manual, esto lo delata."""
+    texto = AGENTE_MD.read_text(encoding="utf-8")
+    assert "encuesta_hogares.generar_informe construir --anio" in texto
+    assert "encuesta_hogares.generar_informe entregar --anio" in texto
+    assert "_cifras_Informe_ECH_{año}.json" in texto, "el resumen se redacta desde el archivo de cifras"
+    paso_5 = texto.split("### 5. ")[1].split("### Las cinco partes")[0]
+    assert "paso5_checkpoint" not in paso_5 and "medir_comando" not in paso_5

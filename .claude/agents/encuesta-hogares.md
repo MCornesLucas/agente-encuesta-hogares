@@ -743,181 +743,104 @@ elige:**
 
 ### 5. Construir el informe con las métricas elegidas
 
-**Esto se hace con UN SOLO script de Python que arma el notebook
-completo de una vez — nunca con muchos comandos sueltos ni archivos
-"para ir viendo qué pasa" con los datos.** Si en algún momento se está
-escribiendo un tercer o cuarto archivo temporal para explorar, o
-"confirmando" a mano algo que ya se puede leer directo del código, es
-señal de haberse ido del método — hay que parar y volver a este proceso:
+**Un solo comando arma el notebook, lo verifica, lo ejecuta una única vez
+y deja las cifras de cada métrica en un archivo.** No se escribe ningún
+script para armar el informe, no se invoca `jupyter nbconvert` por
+separado y no se edita el `.ipynb` a mano:
 
-1. **Leer** (con la herramienta Read, no ejecutando Python) `analysis.py`
-   y `visualization.py` **una sola vez**, para saber qué funciones existen
-   y qué parámetros reciben. No hace falta "probarlas" antes con datos de
-   prueba — ya tienen tests en `tests/` que las validan; confiar en eso.
+```bash
+./run_python.bat -m encuesta_hogares.generar_informe construir --anio {año} --metricas 1,2,8,13 --bloques brecha_digital,hogares,territorio
+```
 
-   Justo después de terminar esta lectura, y antes de empezar a escribir
-   el script del punto 2, registrar un punto de control en la bitácora
-   (`run_python.bat -c "from encuesta_hogares import bitacora;
-   bitacora.registrar('paso5_checkpoint', etapa='lectura_referencia_fin')"`).
-   Nace de un caso real: entre que la persona terminaba el catálogo del
-   paso 4 y que arrancaba la carga de datos había un hueco de varios
-   minutos sin ningún evento — invisible en la bitácora, así que no había
-   forma de saber si el tiempo se iba en leer estos dos archivos, en que
-   el propio modelo escriba el script del punto 2 (lo más probable,
-   dada la cantidad de código que hay que generar cuando se eligen
-   muchas métricas y/o comparación entre varios años), o en correrlo.
-   Estos puntos de control dividen ese hueco en tramos medibles.
-2. Escribir **un único archivo** Python que arma la lista de celdas.
+- `--anio`: el año confirmado en el paso 1.
+- `--metricas`: la lista `metricas` del paso 4, separada por comas.
+- `--bloques`: las claves de los bloques marcados en el paso 3.5, separadas
+  por comas (`brecha_digital`, `hogares`, `territorio`, `vivienda`, `fies`,
+  `empleo`, `seguridad`).
+- `--extra ruta.py`: **solo** si hay comparación entre años
+  (`metricas_comparadas` con al menos un número) o una métrica a medida
+  viable (paso 6). Ver "Celdas escritas a mano" más abajo.
+- `--motivo "..."`: solo al volver a construir el mismo año después de una
+  corrección; queda registrado en la bitácora como `reejecucion_notebook`.
 
-   **Para las 42 métricas fijas del catálogo (paso 4), usar
-   `notebook_builder.py` en vez de escribir el código a mano** — ver su
-   docstring para el porqué (una medición real: 7 de los ~10 minutos que
-   tardaba este paso eran el modelo escribiendo texto que, para el
-   catálogo fijo, siempre es la misma llamada a la misma función ya
-   testeada). El patrón:
+Qué hace el comando por dentro (no hay que repetir nada de esto a mano):
 
-   ```python
-   from encuesta_hogares import notebook_builder as nb
+1. Arma la estructura fija del informe con
+   `notebook_builder.construir_celdas_notebook` (introducción, preparación
+   de datos, un tramo por tema con su presentación y sus términos, las
+   cinco partes de cada métrica, la nota metodológica) y la escribe en
+   **exactamente `notebooks/Informe_ECH_{año}.ipynb`** — sin sufijos ni
+   variantes: es lo que hace que dos años nunca choquen y que el respaldo
+   "(anterior)" se dispare solo cuando se repite el mismo año.
+2. **Verifica el notebook antes de ejecutarlo**: gráficas que se
+   duplicarían (variable suelta después de `viz.plot_...`), métricas sin
+   gráfica o sin cita en la justificación, texto sin completar,
+   encabezados repetidos. Si algo falla, no ejecuta.
+3. Lo ejecuta una sola vez con `jupyter nbconvert`, medido en la bitácora
+   como `ejecucion_notebook`.
+4. **Verifica el resultado**: ninguna celda con error, ninguna gráfica sin
+   imagen.
+5. Deja en `notebooks/_cifras_Informe_ECH_{año}.json` todas las tablas y
+   valores que calcularon las métricas — de ahí salen los números del
+   resumen analítico (paso 8).
 
-   celdas = nb.construir_celdas_notebook(
-       anio_base=anio,
-       metricas=metricas,          # todas las elegidas del paso 4
-       incluir_brecha_digital=incluir_brecha_digital,
-       incluir_fies=incluir_fies,
-       incluir_empleo=incluir_empleo,
-       incluir_seguridad=incluir_seguridad,
-       # Comparaciones entre años y métricas a medida: escritas a mano,
-       # colgadas de la métrica a la que acompañan. Van justo después de
-       # ella, dentro de su bloque.
-       celdas_extra={numero: [<celda escrita a mano>], ...},
-   )
+Al terminar imprime un JSON con las rutas. **Si imprime `INFORME NO
+GENERADO` (código de salida 2)**: leer el motivo, corregir la causa — en
+el archivo `--extra` si es una celda escrita a mano, o registrando una
+sugerencia de catálogo si es una plantilla del catálogo — y volver a
+correr el mismo comando agregando `--motivo`. Nunca esquivar la
+verificación editando el notebook.
 
-   nb.escribir_notebook(celdas, ruta_notebook)
-   ```
+#### Celdas escritas a mano (`--extra`)
 
-   **Una sola llamada, no una lista armada a mano.**
-   `construir_celdas_notebook` es la que garantiza la estructura del
-   informe (v0.13.0): introducción fija, preparación de datos, un tramo
-   por tema con su presentación y sus términos, y la nota metodológica al
-   final. Armar la lista a mano — como se hacía antes — vuelve a producir
-   una lista plana de métricas sin introducción ni bloques. Si algo no
-   entra en `celdas_extra`, se arregla la función y su test, no acá.
+Las comparaciones entre años y las métricas a medida del paso 6 no salen
+de `notebook_builder.py` a propósito: cruzar datos de años distintos y
+calcular algo nuevo es justo donde conviene que alguien note que un
+resultado no cierra. Se escriben en **un único archivo Python** (con
+`Write`, en la carpeta de scratchpad) que define una o las dos variables:
 
-   Ya se encarga de todo lo que antes había que armar a mano: la
-   explicación de "ponderado" (ahora en la nota metodológica del final,
-   que es su lugar), el panorama de conectividad al abrir Brecha Digital,
-   `bitacora.medir("carga_de_datos")` alrededor de la carga, el
-   agrupamiento de las métricas por tema, y las cinco partes de cada
-   métrica en el orden correcto. No hace falta reescribir nada de eso.
+```python
+from encuesta_hogares.notebook_builder import Celda
 
-   **La comparación entre años (paso 4, `comparar_anios`/
-   `metricas_comparadas`) queda fuera de `notebook_builder.py` a
-   propósito** — se probó mecanizarla ahí y, corriéndola de verdad contra
-   datos reales, aparecieron dos bugs (variables de un año pisando las de
-   otro; "departamento" escrito distinto entre años haciendo que un cruce
-   diera cero filas). Se decidió, con el dueño del proyecto, que cruzar
-   datos de años distintos es justo el tipo de tarea donde conviene que
-   alguien (o algo) note que un resultado no cierra y lo investigue, no
-   una plantilla fija. Para cada número en `metricas_comparadas`, agregar
-   una celda de comparación aparte, a mano, y pasarla en `celdas_extra`
-   colgada de esa métrica — mismo criterio ya documentado más abajo en
-   esta sección (2 años → dumbbell, 3+ → serie), y usar siempre
-   `preprocessing.normalizar_departamento` / `analysis.tabla_a_dict`, ya
-   escritas y testeadas, en vez de reinventar ese código.
+# Colgadas de la métrica del catálogo a la que acompañan (justo después de ella).
+celdas_extra = {
+    8: [Celda(markdown="### Comparación 2023 vs. 2025 ...", codigo="...", markdown_final="...")],
+}
+# Al final del informe, antes de la nota metodológica.
+celdas_finales = [Celda(markdown="### 99. ...", codigo="...", markdown_final="...")]
+```
 
-   **Las métricas a medida del paso 6 tampoco pasan por
-   `notebook_builder.py`** — se escriben a mano con
-   `notebook_builder.Celda(markdown=..., codigo=..., markdown_final=...)`.
-   Si acompañan a una métrica del catálogo, van en `celdas_extra`; si no,
-   se agregan al final de la lista, antes de la nota metodológica.
+Solo en este caso hace falta leer (con `Read`, una sola vez)
+`analysis.py` y `visualization.py` para saber qué funciones existen y qué
+reciben — no probarlas antes con datos de prueba, ya tienen tests. Para la
+comparación entre años, el criterio ya documentado en
+`docs/CONVENCIONES_DE_GRAFICAS.md` (2 años → `diferencia_entre_tablas` +
+`plot_dumbbell`; 3+ → `combinar_por_anio` + `plot_serie_por_anio`) y
+siempre `preprocessing.normalizar_departamento` / `analysis.tabla_a_dict`,
+ya escritas y testeadas.
 
-   **Toda celda escrita a mano lleva las mismas cinco partes y el mismo
-   orden que las del catálogo** (nombre, pregunta, términos propios,
-   gráfica, justificación académica): la justificación va en
-   `markdown_final`, que es el markdown que sale **después** del código.
-   Y los términos que ya explicó la presentación del bloque no se repiten.
+**Toda celda escrita a mano lleva las mismas cinco partes y el mismo
+orden que las del catálogo** (nombre, pregunta, términos propios,
+gráfica, justificación académica con su cita): la justificación va en
+`markdown_final`. Los términos que ya explicó la presentación del bloque
+no se repiten. Las reglas de las dos secciones siguientes aplican a estas
+celdas; las del catálogo ya las cumplen.
 
-   **La ruta es siempre exactamente
-   `notebooks/Informe_ECH_{año}.ipynb`** (el año elegido en el paso 1, sin
-   ningún sufijo ni variante — nada de `_personalizado`, `_v2`, una
-   descripción del contenido, etc.): es lo que hace que dos años
-   distintos nunca choquen entre sí, y que el respaldo solo se dispare
-   cuando de verdad se repite el mismo año. `nb.escribir_notebook(...)` ya
-   se encarga del respaldo (`entrega.respaldar_si_existe`) y de escribir
-   el `.ipynb` a disco — no hace falta llamar a `nbformat.write` aparte.
+**Cómo terminar cada celda que llama a una función `viz.plot_*`** — la
+verificación previa lo controla, pero conviene escribirlo bien de entrada:
+- Si la función usa Plotly, terminar la celda con `fig.show()`, **nunca**
+  con `fig` solo (con el renderer PNG, la variable suelta muestra la
+  gráfica dos veces).
+- Si la función usa matplotlib/seaborn, no volver a nombrar `fig` después
+  de la llamada: con `%matplotlib inline` la figura ya se muestra sola.
 
-   Las reglas de las próximas dos secciones ya están aplicadas en todo lo
-   que arma `notebook_builder.py` — importan para las celdas de
-   comparación entre años y las métricas a medida del paso 6, que se
-   siguen escribiendo a mano.
+**Nunca dejar un `print(variable)` crudo** antes o después de la gráfica
+(ver `docs/METODOLOGIA.md`, sección 3): si hace falta reforzar un número
+en texto, formatearlo explícito (`f"{valor:.2f}%"`) o escribirlo en prosa
+en la celda de markdown.
 
-   **Cómo terminar cada celda que llama a una función `viz.plot_*` —
-   comprobado que dejarla mal duplica la gráfica en el informe final:**
-   - Si la función usa Plotly (`plotly.express`/`plotly.graph_objects` —
-     ver los imports de `visualization.py` ya leídos en el paso 1),
-     terminar la celda con `fig.show()`, **nunca** con `fig` solo. Con
-     `pio.renderers.default = "png"` puesto en la celda de configuración,
-     dejar `fig` como última línea la muestra dos veces (un bug conocido
-     de Plotly, no un error de código).
-   - Si la función usa matplotlib/seaborn (`plt`/`sns`), **no volver a
-     nombrar `fig` después de la llamada** — con `%matplotlib inline`
-     puesto, la figura ya se muestra sola al final de la celda; un `fig`
-     suelto la duplica por la misma razón, con otro mecanismo.
-   - Si hay dudas de cuál es cuál para una función en particular, ir a su
-     definición en `visualization.py` (ya abierta del paso 1) y verificar
-     qué importa.
-
-   **Nunca dejar un `print(variable)` crudo antes o después de la gráfica
-   de una métrica** — ver la regla completa en `docs/METODOLOGIA.md`,
-   sección 3. Si la gráfica ya muestra el valor (lo normal), no repetirlo
-   con un print; si hace falta reforzarlo en texto, formatearlo explícito
-   (`f"{valor:.2f}%"`, nombres en vez de códigos) o escribirlo en prosa en
-   la celda de markdown, nunca la variable sola — un dict, una Series o un
-   DataFrame impresos tal cual muestran ruido técnico (`np.float64(...)`,
-   `dtype: float64`, un índice 0/1/2 sin sentido) que no tiene lugar en un
-   informe para un lector no técnico.
-   Apenas termine la llamada a `Write` que crea este script (antes de
-   ejecutarlo), registrar otro punto de control: `run_python.bat -c
-   "from encuesta_hogares import bitacora; bitacora.registrar(
-   'paso5_checkpoint', etapa='script_notebook_escrito')"`. **Antes de
-   mecanizar las métricas fijas del catálogo, el tramo entre este punto y
-   el anterior (`lectura_referencia_fin`) era casi siempre el más largo
-   del paso 5** — el modelo generando a mano el código de cada métrica.
-   Con `notebook_builder.py` armando esas 43, ese tramo ahora debería ser
-   corto salvo que la corrida tenga bastante comparación entre años
-   (`metricas_comparadas`) y/o varias métricas a medida del paso 6 — esas
-   dos partes siguen escribiéndose a mano, así que siguen concentrando el
-   tiempo real cuando aparecen. Si este tramo sale largo en una corrida
-   sin comparación ni métricas del paso 6, es una señal real de que algo
-   se está escribiendo a mano que debería estar pasando por
-   `notebook_builder.py` — revisar, no asumir que es normal.
-3. Ejecutar ese único script **una vez** con `run_python.bat`. Al
-   terminar, un tercer punto de control: `run_python.bat -c "from
-   encuesta_hogares import bitacora; bitacora.registrar(
-   'paso5_checkpoint', etapa='script_notebook_ejecutado')"` — con esto,
-   el tramo hasta acá queda dividido en tres partes medibles (leer,
-   escribir el script, correrlo), en vez de un solo hueco ciego entre el
-   formulario del catálogo y la carga de datos dentro del notebook.
-4. Ejecutar el notebook completo — eso es lo que corre los cálculos de
-   verdad, no hace falta correrlos por separado antes ni verificar los
-   números a mano en el camino. Envolver la ejecución con
-   `bitacora.medir_comando("ejecucion_notebook", [...])` en vez de invocar
-   `jupyter nbconvert` directo (ver el ejemplo exacto en
-   `docs/FLUJO_DE_TRABAJO.md`, sección 1, paso 5) — así queda registrado
-   cuánto tardó, para poder revisarlo después con
-   `tools/resumen_sesiones.py`.
-5. Ahí sí, revisar errores y gráficas como indica el flujo de verificación
-   (sección 1 de `docs/FLUJO_DE_TRABAJO.md`).
-
-Los textos que citan cifras (cuartiles, cortes, promedios) hay que
-recalcularlos con los datos del año nuevo — nunca copiar los números del
-notebook de 2019.
-
-La mayoría de las métricas del catálogo ya tienen una función lista en
-`src/encuesta_hogares/analysis.py` / `visualization.py` (reutilizarlas tal
-cual). Para las pocas que no, generar primero la función correspondiente
-—siguiendo el mismo criterio de rigor del paso 6— y su test, y recién
-después sumarla al script del punto 2.
+Los textos que citan cifras se sacan del archivo de cifras del año nuevo
+— nunca copiar los números del notebook de otro año.
 
 ### Las cinco partes que lleva SIEMPRE toda métrica
 
@@ -984,30 +907,28 @@ una diferencia entre dos grupos específicos (para estas últimas, usar
 `visualization.plot_dumbbell` — ver `docs/CONVENCIONES_DE_GRAFICAS.md` —
 en vez de un `print()` con la resta ya calculada).
 
-**La última sección del notebook es siempre el "Resumen analítico final"
-(sección 1 de `docs/METODOLOGIA.md`), y tiene que quedar escrita con las
-cifras reales de esta corrida — nunca como texto pendiente ni como
-placeholder.** Recién se puede escribir después de tener todas las
-gráficas ejecutadas: sacar los números concretos de cada una (con Python,
-no de memoria ni a ojo) y armar 3-5 párrafos cortos que cuenten los
-hallazgos principales, en lenguaje simple, citando los porcentajes
-puntuales. Un notebook que termina con algo como "(se completa después)"
-no está terminado — no entregarlo así.
+**La última sección del informe es siempre el "Resumen analítico final"
+(sección 1 de `docs/METODOLOGIA.md`), redactado con las cifras reales de
+esta corrida — nunca como texto pendiente ni como placeholder.** Se
+escribe después de `construir` (paso 5) y antes de `entregar` (paso 8):
 
-**Si el informe incluye alguna categoría de métricas cuyo diseño se basó en
-fuentes externas** (Brecha Digital, Hogares, Territorio, Vivienda, Empleo y
-Seguridad y Victimización — ver la lista de fuentes de cada una más abajo),
-agregar al final del "Resumen analítico final" una sección corta llamada
-**"Fuentes de consulta para alineación de métricas"**, con esas fuentes en
-una lista simple (título + link, o cita completa si no hay link) — solo
-las de los bloques que el informe termine incluyendo, no todas de memoria.
-No hace falta para FIES, que sale directo de la metodología original del
-proyecto, no de investigación externa nueva.
+1. Leer (con `Read`, una sola vez) `notebooks/_cifras_Informe_ECH_{año}.json`:
+   ahí están, tabla por tabla, los valores que calculó cada métrica. No
+   recalcular nada con Python ni sacar números de memoria.
+2. Escribir con `Write`, en la carpeta de scratchpad, un archivo markdown
+   con 3-5 párrafos cortos organizados por los bloques que quedaron en el
+   informe, en lenguaje simple, citando los porcentajes puntuales **tal
+   cual figuran en el JSON** (mismos decimales, o redondeados). Sin
+   encabezado propio: el título de la sección lo pone `entregar`.
+3. Pasarlo a `entregar` con `--resumen`. El comando valida cada cifra
+   contra los resultados ejecutados y rechaza el resumen si alguna no
+   coincide — en ese caso corregir el número en el archivo y volver a
+   correr `entregar`, nada más.
 
-Seguir el flujo de verificación completo de la sección 1 de
-`docs/FLUJO_DE_TRABAJO.md` (tests, ejecución completa, chequeo de errores,
-revisión visual de cada gráfica, generación del informe HTML). No dar el
-informe por terminado sin haber hecho todos los pasos.
+La sección **"Fuentes de consulta para alineación de métricas"** la agrega
+`entregar` sola, con las fuentes de los bloques presentes (Brecha Digital,
+Hogares, Territorio, Vivienda, Empleo, Seguridad y Victimización; FIES no
+lleva). No escribirla a mano.
 
 ### 6. Evaluar y construir las métricas propuestas por el usuario
 
@@ -1131,46 +1052,42 @@ incluso acá).
 
 ### 7. Revisión final de coherencia
 
-Antes de dar el trabajo por terminado, repasar el notebook completo contra
-la sección 3 de `docs/METODOLOGIA.md`: sin encabezados amontonados, cada
-gráfica con su pregunta guía antes y su justificación después, sin huecos
-de numeración, sin referencias a secciones que ya no existen, terminología
-consistente. **Releer también el
-"Resumen analítico final" entero**: si se encuentra cualquier placeholder,
-texto entre paréntesis del tipo "(pendiente)", o una sección sin
-completar, es que se saltó un paso — hay que volver y escribirlo con
-números reales antes de seguir.
+La revisión estructural del informe la hace `construir` (paso 5) antes de
+ejecutar — gráficas duplicadas, métricas sin gráfica o sin cita, texto sin
+completar, encabezados repetidos — y la de resultados la hace después —
+celdas con error, gráficas sin imagen. `entregar` (paso 8) valida además
+cada cifra del resumen. **No releer el notebook entero ni editarlo a
+mano**: si alguna verificación bloquea, corregir la causa y volver a
+correr el comando que bloqueó.
 
-**Si esta revisión encuentra algo que obliga a corregir el notebook y
-volver a ejecutarlo, registrar el motivo ANTES de re-ejecutar:**
-
-```python
-from encuesta_hogares import bitacora
-bitacora.registrar("reejecucion_notebook", motivo="<qué se corrigió y por qué>")
-```
-
-Nace de una corrida real: el notebook se ejecutó dos veces (~4 minutos, el
-23% de la corrida) y la bitácora no decía por qué — el motivo solo se supo
-porque además se registró una sugerencia de catálogo. Es el mismo punto
-ciego que ya obligó a crear los checkpoints del paso 5: un tramo caro que
-la bitácora no puede explicar. Si la corrección además es un defecto de
-una plantilla del catálogo (no de esta corrida puntual), registrar también
-la sugerencia con `bitacora.sugerir_catalogo(...)`, como siempre.
+Volver a `construir` el mismo año es una re-ejecución: pasar siempre
+`--motivo "<qué se corrigió y por qué>"`, que queda en la bitácora como
+`reejecucion_notebook` (sin el motivo se registra igual, como "(no
+indicado)"). Nace de una corrida real en la que el notebook se ejecutó dos
+veces y la bitácora no decía por qué. Si la corrección además es un
+defecto de una plantilla del catálogo (no de esta corrida puntual),
+registrar la sugerencia con `bitacora.sugerir_catalogo(...)`, como siempre.
 
 ### 8. Entregar el informe: siempre PDF y HTML
 
 **Siempre se generan los dos formatos, sin excepción y sin preguntar** —
-el formulario del catálogo (paso 4) ya no pregunta preferencia de PDF, así
-que no hay nada que revisar ahí:
+el formulario del catálogo (paso 4) ya no pregunta preferencia de PDF. Un
+solo comando agrega el resumen analítico verificado y genera los dos
+archivos:
 
-1. Generar el informe HTML sin código (sección 1, paso 8 de
-   `docs/FLUJO_DE_TRABAJO.md`) — es la base de la que sale también el PDF.
-2. Seguir exactamente el procedimiento de la sección 2 de
-   `docs/FLUJO_DE_TRABAJO.md` — portada + `docs/informe_estilo.css` →
-   conversión con Chromium vía Playwright (nunca `nbconvert --to pdf`,
-   que depende de una instalación de LaTeX) → copia a `Path.home() /
-   "Downloads"`. Confirmar al final que el PDF se generó bien (cantidad de
-   páginas, tamaño de archivo razonable).
+```bash
+./run_python.bat -m encuesta_hogares.generar_informe entregar --anio {año} --resumen "<ruta al markdown del resumen>"
+```
+
+Por dentro: agrega el resumen y la lista de fuentes de consulta al final
+del notebook sin volver a ejecutarlo; genera el HTML sin código
+(`notebooks/Informe_ECH_{año}.html`, con su título corregido); genera el
+PDF con portada y hoja de estilos de impresión, imprimiendo con Chromium
+vía Playwright (nunca `nbconvert --to pdf`, que depende de LaTeX), en
+`notebooks/Informe_ECH_{año}.pdf`; y deja una copia en la carpeta de
+Descargas. Los archivos anteriores del mismo año quedan respaldados como
+"(anterior)". Imprime un JSON con `pdf_path` y `html_path`: esas son las
+dos rutas absolutas que van a `mostrar_finalizacion()`.
 
 **Nunca usar `start` desde la terminal para "abrir" el informe, ni para
 el PDF ni para el HTML** — en la práctica resultó poco confiable (llegó a
