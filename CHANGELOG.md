@@ -10,6 +10,23 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.14.1] — 2026-09-09
+
+### Cambiado
+
+- Las instrucciones del agente ya no obligan a leer los tres documentos de
+  reglas en cada corrida: se leen solo cuando el informe lleva celdas
+  escritas a mano (métrica a medida o comparación entre años). Para las
+  métricas del catálogo el pipeline aplica y verifica esas reglas.
+- El procedimiento de curación del catálogo (solo para el dueño del
+  proyecto) pasa a `docs/CURACION_DEL_CATALOGO.md`; las instrucciones
+  conservan la regla de la compuerta previa. Las listas de fuentes por
+  bloque dejan de estar duplicadas en las instrucciones: viven en el
+  constructor del informe y en `docs/BIBLIOGRAFIA.md`.
+- `tools/validar_con_datos_reales.py` construye y ejecuta el notebook real
+  de cada año con la celda de cifras y exige que pase las verificaciones
+  previa y posterior del pipeline. Corrido sobre 2019, 2023, 2024 y 2025.
+
 ## [0.14.0] — 2026-09-09
 
 Versión centrada en el tiempo de proceso. Medido sobre los datos reales de
