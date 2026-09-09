@@ -588,25 +588,10 @@ cuenta si alguna de estas métricas está en el informe:
   métrica nueva de este bloque, seguir el mismo criterio para que siga
   funcionando en 2024 en adelante.
 
-Fuentes consultadas para diseñar Brecha Digital y Hogares (agregarlas a
-"Fuentes de consulta para alineación de métricas" si el informe incluye
-alguna métrica de estos dos bloques):
-- CEPAL — Observatorio de Desarrollo Digital de América Latina y el Caribe:
-  https://desarrollodigital.cepal.org/es/indicadores
-- UIT/ITU — ICT Development Index:
-  https://www.itu.int/en/ITU-D/Statistics/Pages/IDI/default.aspx
-- A4AI — estándar "Meaningful Connectivity":
-  https://a4ai.org/news/what-is-meaningful-internet-access-conceptualising-a-holistic-ict4d-policy-framework/
-- Muñoz, R. — "Brechas de acceso digital: cambio histórico y ciclo vital"
-  (aplica el enfoque de cohorte a esta misma encuesta), Revista de
-  Ciencias Sociales, UdelaR:
-  https://rcs.cienciassociales.edu.uy/index.php/rcs/article/view/261
-- CEPAL — "La brecha digital de género: reflejo de la desigualdad social",
-  Nota para la Igualdad N°10:
-  https://oig.cepal.org/sites/default/files/notas_para_la_igualdad_ndeg10_-_brecha_digital_de_genero.pdf
-- CEPALSTAT (CEPAL/CELADE) — jefatura de hogar, tipos de hogar,
-  hacinamiento, razón de dependencia demográfica:
-  https://statistics.cepal.org/portal/cepalstat/
+Las fuentes consultadas para diseñar Brecha Digital y Hogares las agrega `entregar` (paso 8) a la
+sección "Fuentes de consulta para alineación de métricas" cuando el informe
+incluye alguna de sus métricas; viven en `notebook_builder._FUENTES_POR_BLOQUE` y
+en `docs/BIBLIOGRAFIA.md`. No copiarlas a mano.
 
 **Nota sobre Territorio (métricas 13-15), si el usuario las elige:** el
 índice de desarrollo territorial (`analysis.indice_desarrollo_territorial`)
@@ -627,19 +612,10 @@ departamento (eso ya se hace, disperso, en Hogares/Empleo/Seguridad).
 - Normalizar con `indice_desarrollo_territorial(componentes, invertir=[...])`
   — pasarle la lista de columnas donde "más alto es peor" (pobreza,
   precariedad) para que se inviertan antes de promediar.
-- Fuentes consultadas para diseñar esta categoría (agregarlas también a
-  "Fuentes de consulta para alineación de métricas" si el informe incluye
-  alguna de estas 3 métricas):
-  - Rodríguez Miranda, A.; Vial Cossani, C.; Centurión, I.; Pérez
-    Fernández, M. — "Índice de Desarrollo Regional Uruguay 2006-2022
-    (IDERE-UY)", IECON-FCEA/UdelaR, financiado por ANII (Fondo María
-    Viñas), 2024: https://ideas.repec.org/p/ulr/wpaper/dt-01-24.html
-  - CEPAL/ILPES — "Panorama del desarrollo territorial de América Latina y
-    el Caribe" (índice de desarrollo regional):
-    https://www.cepal.org/es/publicaciones/tipos/panorama-desarrollo-territorial-america-latina-caribe
-  - CEPAL — "Guía metodológica para el diseño de indicadores compuestos de
-    desarrollo sostenible", 2009:
-    https://repositorio.cepal.org/handle/11362/3663
+- Las fuentes consultadas para diseñar Territorio las agrega `entregar` (paso 8) a la
+  sección "Fuentes de consulta para alineación de métricas" cuando el informe
+  incluye alguna de sus métricas; viven en `notebook_builder._FUENTES_POR_BLOQUE` y
+  en `docs/BIBLIOGRAFIA.md`. No copiarlas a mano.
 
 **Nota sobre Vivienda (métricas 16-20), si el usuario las elige:** las
 métricas de esta categoría se rediseñaron para no depender de la tenencia
@@ -660,20 +636,10 @@ Brecha Digital y Hogares). Ahora usan un índice de conteo de carencias
   "oportunidades" de sumar al menos una carencia que uno de 2024, aunque
   su vivienda esté igual de bien. No hace falta esa aclaración si el
   informe es de un solo año.
-- Fuentes consultadas para diseñar esta categoría (agregarlas también a
-  "Fuentes de consulta para alineación de métricas" si el informe incluye
-  alguna de estas 5 métricas):
-  - UN-Habitat/UNSD — Metadatos del indicador SDG 11.1.1 ("durability of
-    housing"), 2020: https://unhabitat.org/sites/default/files/2020/06/metadata_on_sdg_indicator_11.1.1.pdf
-  - Bramati, M. et al. — "Introducing the Adequate Housing Index (AHI)",
-    World Bank Policy Research Working Paper 9830, 2021:
-    https://documents.worldbank.org/en/publication/documents-reports/documentdetail/936291631846076967
-  - INE Uruguay, FCS-UdelaR, IECON, MIDES (coord. Calvo, J.J.) — "Atlas
-    Sociodemográfico y de la Desigualdad del Uruguay", Fascículo 1 (NBI),
-    2013: https://www.ine.gub.uy/atlas-sociodemografico-y-de-la-desigualdad-del-uruguay
-  - CELADE/CEPAL — déficit habitacional cualitativo vs. cuantitativo;
-    Arriagada, C. — "Perfil de déficit y políticas de vivienda de interés
-    social", CEPAL, 2003: https://repositorio.cepal.org/handle/11362/5711
+- Las fuentes consultadas para diseñar Vivienda las agrega `entregar` (paso 8) a la
+  sección "Fuentes de consulta para alineación de métricas" cuando el informe
+  incluye alguna de sus métricas; viven en `notebook_builder._FUENTES_POR_BLOQUE` y
+  en `docs/BIBLIOGRAFIA.md`. No copiarlas a mano.
 
 **Nota sobre FIES (métricas 21-27), si el usuario las elige:** el archivo
 `base_FIES_{año}.csv` cubre una **submuestra** de hogares, no el total del
@@ -700,23 +666,14 @@ ofrecen si contestó que sí en `plantilla_areas()`, paso 3.5 más arriba):
   solo tienen sentido para quien está en `condicion_actividad == "Ocupados"`
   — filtrar a Ocupados antes de usarlas, si no la tasa sale artificialmente
   baja (verificado contra los datos reales).
-- Estas 8 métricas (a diferencia de las de Hogares y FIES, que salen
-  directo de la metodología del proyecto) se eligieron consultando fuentes
-  externas — dos ejes en particular (brecha de género y desempleo juvenil)
-  no estaban en el diseño original y se agregaron después de esa consulta,
-  porque son los hallazgos más relevantes para Uruguay según esas mismas
-  fuentes. Si el informe incluye alguna métrica de esta categoría, agregar
-  esta lista en la sección "Fuentes de consulta para alineación de
-  métricas" del resumen final (ver más abajo):
-  - Indicadores Clave del Mercado de Trabajo (KILM) — OIT:
-    https://www.ilo.org/resource/key-indicators-labour-market-kilm
-  - "Se profundizó la brecha de género en el mercado laboral" — Ámbito:
-    https://www.ambito.com/uruguay/se-profundizo-la-brecha-genero-el-mercado-laboral-n6096977
-  - "El desempleo entre los más jóvenes cerró cerca del 25% en 2024" — Ámbito:
-    https://www.ambito.com/uruguay/el-desempleo-los-mas-jovenes-cerro-cerca-del-25-2024-n6108458
-  - "Subempleo e informalidad afectan a casi 3 de cada 10 ocupados en
-    Uruguay" — La Mañana:
-    https://www.xn--lamaana-7za.uy/actualidad/trabajo-subempleo-e-informalidad-afectan-a-casi-3-de-cada-10-ocupados-en-uruguay/
+- Estas 8 métricas se eligieron consultando fuentes externas — dos ejes en
+  particular (brecha de género y desempleo juvenil) no estaban en el diseño
+  original y se agregaron porque son los hallazgos más relevantes para
+  Uruguay según esas fuentes.
+- Las fuentes consultadas para diseñar Empleo las agrega `entregar` (paso 8) a la
+  sección "Fuentes de consulta para alineación de métricas" cuando el informe
+  incluye alguna de sus métricas; viven en `notebook_builder._FUENTES_POR_BLOQUE` y
+  en `docs/BIBLIOGRAFIA.md`. No copiarlas a mano.
 
 **Nota sobre Seguridad y Victimización (métricas 36-42), si el usuario las
 elige:**
@@ -741,14 +698,10 @@ elige:**
   diccionario de valores publicado por el INE — se confirmó revisando la
   variable directo en el catálogo (categorías vacías) — sigue sin estar en
   el catálogo.
-- Fuentes consultadas para diseñar esta categoría (agregarlas también a
-  "Fuentes de consulta para alineación de métricas" si el informe incluye
-  alguna de estas 7 métricas):
-  - Manual para Encuestas de Victimización — UNODC/UNECE:
-    https://www.unodc.org/documents/data-and-analysis/Crime-statistics/Manual_Victimization_surveys_2009_spanish.pdf
-  - "Qué porcentaje de delitos son denunciados a la Policía, según informe
-    del INE" — Montevideo Portal:
-    https://www.montevideo.com.uy/Noticias/Que-porcentaje-de-delitos-son-denunciados-a-la-Policia-segun-informe-del-INE-uc914924
+- Las fuentes consultadas para diseñar Seguridad y Victimización las agrega `entregar` (paso 8) a la
+  sección "Fuentes de consulta para alineación de métricas" cuando el informe
+  incluye alguna de sus métricas; viven en `notebook_builder._FUENTES_POR_BLOQUE` y
+  en `docs/BIBLIOGRAFIA.md`. No copiarlas a mano.
 
 ### 5. Construir el informe con las métricas elegidas
 
