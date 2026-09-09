@@ -205,28 +205,25 @@ confiable con los datos disponibles), lo indicará en otra pantalla junto
 con una alternativa válida, para aceptarla, proponer otra, o descartar
 esa métrica del informe.
 
-**Tras confirmar el catálogo, el proceso demora un tiempo variable —
-no es instantáneo.** Las 42 métricas fijas del catálogo se arman de
-forma mecánica (rápido, típicamente segundos por métrica); lo que sigue
-demorando minutos es que el agente calcule y revise cada gráfica de
-verdad contra los datos, más cualquier comparación entre años o métrica
-a medida que hayas pedido — esas dos últimas las sigue escribiendo el
-modelo en el momento, no son mecánicas. Como referencia real: una
-corrida grande (27 métricas de 4 bloques, con comparación entre tres
-años) tomó unos **15 minutos** de punta a punta, desde la bienvenida
-hasta el PDF. Que la terminal permanezca sin novedades visibles durante
-un rato es esperable, no indica un error.
+**Tras confirmar el catálogo, el proceso demora algunos minutos — no es
+instantáneo.** Las 42 métricas fijas del catálogo se arman y se calculan
+de forma mecánica: con los datos reales de 2025, el notebook completo de
+41 métricas se ejecuta en unos 25 segundos y el HTML y el PDF se generan
+en unos 15 segundos más. Lo que agrega tiempo es la redacción del resumen
+analítico a partir de las cifras calculadas y cualquier comparación entre
+años o métrica a medida que se haya pedido — esas dos últimas las sigue
+escribiendo el modelo en el momento, no son mecánicas. Que la terminal
+permanezca sin novedades visibles durante un rato es esperable, no indica
+un error.
 
-**Si te preocupa llegar al límite de uso de tu plan a mitad de una
-corrida larga con muchos bloques y bastante comparación entre años,
-conviene no elegir los siete bloques de una sola vez.** Es preferible
-generar el informe en varias corridas más chicas — uno o dos bloques por
-vez, encadenándolas con el botón "crear un nuevo informe" del Paso 7 —
-en vez de arriesgarse a que una corrida larga se corte a mitad de camino
-por falta de uso disponible. Cada corrida produce su propio informe
-(notebook, HTML y PDF); si elegís bloques distintos en cada una, vas a
-terminar con varios informes parciales para el mismo año, no uno solo
-combinado.
+**Si preocupa llegar al límite de uso del plan a mitad de una corrida
+con bastante comparación entre años o varias métricas a medida**, es
+preferible generar el informe en varias corridas más chicas —
+encadenándolas con el botón "crear un nuevo informe" del Paso 7 — en vez
+de arriesgarse a que una corrida larga se corte a mitad de camino. Cada
+corrida produce su propio informe (notebook, HTML y PDF); si se eligen
+bloques distintos en cada una, quedan varios informes parciales para el
+mismo año, no uno solo combinado.
 
 ## Paso 7: Revisar los resultados
 
@@ -370,6 +367,9 @@ agente-encuesta-hogares/
 │   └── BIBLIOGRAFIA.md             # Fuentes académicas consolidadas
 ├── src/
 │   └── encuesta_hogares/        # Código de análisis, reutilizable año a año
+│       ├── generar_informe.py      # Pipeline: construir (verificar, ejecutar una vez) y entregar (HTML, PDF)
+│       ├── notebook_builder.py     # Arma las celdas del informe para las métricas del catálogo
+│       └── verificacion_notebook.py # Verificaciones del notebook antes y después de ejecutarlo
 ├── notebooks/                   # Informes generados (uno por año)
 ├── tests/                       # Tests automáticos de la lógica de análisis
 ├── data/                        # Archivos de datos del usuario (no se suben a git)

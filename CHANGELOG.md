@@ -10,6 +10,67 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.14.0] — 2026-09-09
+
+Versión centrada en el tiempo de proceso. Medido sobre los datos reales de
+2025: la ejecución del notebook con las 41 métricas disponibles pasó de
+149 s a 25 s, y una corrida ya no ejecuta el notebook más de una vez.
+Ningún cálculo ni resultado cambia: las cifras de un informe generado con
+la 0.13.6 son las mismas.
+
+### Agregado
+
+- **Pipeline de dos comandos** (`encuesta_hogares.generar_informe`).
+  `construir` arma el notebook, lo verifica antes de ejecutarlo, lo
+  ejecuta una sola vez, verifica el resultado y deja las cifras de cada
+  métrica en `notebooks/_cifras_Informe_ECH_<año>.json`. `entregar`
+  valida cada cifra del resumen analítico contra esos resultados, agrega
+  el resumen y las fuentes de consulta al notebook sin volver a
+  ejecutarlo, y genera el HTML sin código y el PDF con portada (Chromium
+  vía Playwright), con copia en Descargas. El modelo ya no escribe el
+  script que arma el notebook ni invoca `nbconvert` por su cuenta; las
+  celdas a medida y las comparaciones entre años se escriben en un archivo
+  `--extra`.
+- **Verificaciones deterministas del notebook** en Python
+  (`verificacion_notebook`): gráficas que se duplicarían, métricas sin
+  gráfica o sin cita, texto sin completar, encabezados repetidos (antes de
+  ejecutar); celdas con error y gráficas sin imagen (después). Reemplazan
+  la revisión manual del paso 7, que obligaba a re-ejecutar.
+- **Sección "Fuentes de consulta para alineación de métricas"** generada
+  desde el constructor según los bloques presentes, en vez de copiada a
+  mano de las instrucciones.
+- Test que compara la clasificación de tipo de hogar vectorizada contra la
+  taxonomía de referencia sobre mil hogares al azar.
+
+### Cambiado
+
+- **Gráficas 20 veces más rápidas**: la cabecera del notebook mantiene un
+  único Chromium para todas las imágenes (`kaleido.start_sync_server`);
+  kaleido 1.x lanzaba uno por gráfica (2,3 s cada una).
+- **Los 12 archivos de Empleo se cargan una sola vez** por informe: el
+  índice territorial (métricas 13-15) los cargaba tres veces y el bloque
+  Empleo otra.
+- `clasificar_tipo_hogar` vectorizado (5,5 s → 0,03 s en 2025), lectura
+  del `.sav` de 2019 solo con las columnas necesarias (7,8 s → 0,6 s).
+- Los tres hooks del notebook son ahora un solo proceso
+  (`gate-notebook.cjs`) que lee el `.ipynb` una vez; cinco procesos de
+  Node por llamada Bash en vez de siete. Cada verificación vive en su
+  módulo `_lib_check_*.cjs` con su propia prueba, incluida una contra el
+  notebook real completo.
+- Pasos 5, 7 y 8 de las instrucciones del agente, `FLUJO_DE_TRABAJO.md`
+  y `METODOLOGIA.md` describen el nuevo camino. El paso 2 detecta los
+  datos en ambos formatos (`.sav` y CSV combinado): buscaba solo `.sav`,
+  formato que el INE dejó de usar en 2023.
+- `config.TIMEOUT_FORMULARIO_SEGUNDOS` reemplaza el 1800 repetido en tres
+  lugares. Los enlaces del README apuntan a la cuenta actual del repositorio.
+
+### Corregido
+
+- La colisión de columnas de origen en el CSV combinado pasa de `assert` a
+  `ValueError`: un assert desaparece con `python -O`.
+- `data/README.md` aclara que los archivos de pesos replicados (cientos de
+  MB por año) no hacen falta.
+
 ## [0.13.6] — 2026-08-17
 
 ### Corregido
