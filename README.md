@@ -364,7 +364,8 @@ agente-encuesta-hogares/
 │   ├── METODOLOGIA.md              # Reglas de rigor estadístico y claridad
 │   ├── FLUJO_DE_TRABAJO.md         # Procedimientos: verificación, PDF, publicación, año nuevo
 │   ├── CONVENCIONES_DE_GRAFICAS.md # Qué tipo de gráfica usar y con qué fundamento
-│   └── BIBLIOGRAFIA.md             # Fuentes académicas consolidadas
+│   ├── BIBLIOGRAFIA.md             # Fuentes académicas consolidadas
+│   └── CURACION_DEL_CATALOGO.md    # Cómo incorporar una métrica al catálogo permanente (dueño)
 ├── src/
 │   └── encuesta_hogares/        # Código de análisis, reutilizable año a año
 │       ├── generar_informe.py      # Pipeline: construir (verificar, ejecutar una vez) y entregar (HTML, PDF)
