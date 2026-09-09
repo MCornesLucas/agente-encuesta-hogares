@@ -76,7 +76,9 @@ independientes y no están disponibles para todos los años**:
 
 Los tres se buscan y aceptan de la misma forma que la base principal
 (pasos 1 a 4), dentro de la misma ficha del año en el catálogo del INE, y
-se copian a la misma subcarpeta `data/AAAA/`. Si alguno no está
+se copian a la misma subcarpeta `data/AAAA/`. **No es necesario descargar
+los archivos de pesos replicados** (`pesos_replicados_*`): pesan cientos
+de megabytes por año y ninguna métrica del catálogo los utiliza. Si alguno no está
 disponible (o el año elegido no lo incluye), no representa un problema:
 el agente detecta automáticamente qué datos existen y solo ofrece las
 categorías del catálogo que pueden construirse con la información

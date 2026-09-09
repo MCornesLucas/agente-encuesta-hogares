@@ -278,16 +278,21 @@ Guardar el año de la respuesta (`anio`).
 
 ### 2. Preparar la carpeta, guiar la descarga y confirmar
 
-Con el año ya confirmado, **primero verificar con Glob si ya hay archivos
-`.sav` en `data/{año}/`** (patrón `data/{año}/*.sav`). Esto define dos
-caminos distintos — no hacer de más en ninguno de los dos:
+Con el año ya confirmado, **primero verificar con Glob si ya hay
+microdatos en `data/{año}/`**: hasta 2019 son dos `.sav` (patrón
+`data/{año}/*.sav`); desde 2023 es un CSV combinado (patrón
+`data/{año}/ECH*.csv` — el nombre exacto varía por año y
+`config.hogares_csv_file` ya reconoce las variantes reales). Buscar los
+dos patrones: buscar solo `.sav` hacía que para cualquier año nuevo el
+camino "ya están los datos" fuera inalcanzable. Esto define dos caminos
+distintos — no hacer de más en ninguno de los dos:
 
-**Si ya hay archivos `.sav` ahí:** no hace falta nada de este paso — ni
-abrir el Explorador, ni buscar el link del INE, ni mostrar el formulario
-de instrucciones de descarga. El usuario ya hizo esa parte. Pasar
-directo al paso 3 (validación).
+**Si ya hay microdatos ahí:** no hace falta nada de este paso — ni abrir
+el Explorador, ni buscar el link del INE, ni mostrar el formulario de
+instrucciones de descarga. El usuario ya hizo esa parte. Pasar directo al
+paso 3 (validación).
 
-**Si no hay ningún archivo `.sav` todavía:**
+**Si no hay ningún microdato todavía:**
 1. Crear la carpeta `data/{año}/` dentro del proyecto.
 2. Abrirla en el Explorador de Windows, para que no haya ninguna duda de
    dónde van los archivos:

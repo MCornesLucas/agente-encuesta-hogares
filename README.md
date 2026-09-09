@@ -1,6 +1,6 @@
 # Agente de Análisis: Encuesta Continua de Hogares (ECH, INE Uruguay)
 
-[![Tests](https://github.com/testa10/agente-encuesta-hogares/actions/workflows/tests.yml/badge.svg)](https://github.com/testa10/agente-encuesta-hogares/actions/workflows/tests.yml)
+[![Tests](https://github.com/MCornesLucas/agente-encuesta-hogares/actions/workflows/tests.yml/badge.svg)](https://github.com/MCornesLucas/agente-encuesta-hogares/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![Licencia: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/licencia-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)
 
@@ -54,7 +54,7 @@ ambos.
    Python) — es el único programa que hay que instalar a mano antes de
    empezar. Use las opciones por defecto del instalador.
 2. Descargue este proyecto desde este enlace directo:
-   <https://github.com/testa10/agente-encuesta-hogares/releases/latest/download/agente-encuesta-hogares.zip>
+   <https://github.com/MCornesLucas/agente-encuesta-hogares/releases/latest/download/agente-encuesta-hogares.zip>
    — se descarga un archivo `agente-encuesta-hogares.zip`
    (normalmente a la carpeta Descargas).
 3. Descomprímalo: haga clic derecho sobre el archivo ZIP descargado →
@@ -101,7 +101,7 @@ Abra una terminal (en Windows: busque "Git Bash" en el menú de inicio, si
 lo instaló junto con Git) y ejecute:
 
 ```bash
-git clone https://github.com/testa10/agente-encuesta-hogares.git
+git clone https://github.com/MCornesLucas/agente-encuesta-hogares.git
 cd agente-encuesta-hogares
 ```
 

@@ -15,6 +15,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 
+# Cuánto espera un formulario a que la persona responda antes de tratarlo
+# como salida del flujo (30 minutos). Un solo lugar: hasta la v0.13.6 el
+# mismo 1800 estaba escrito en arranque.py y dos veces en formularios.py.
+TIMEOUT_FORMULARIO_SEGUNDOS = 1800
+
 # Cada año de datos vive en su propia subcarpeta: data/{año}/H_....sav y
 # data/{año}/P_....sav. El agente crea esa subcarpeta antes de pedirle al
 # usuario que guarde los archivos ahí (ver .claude/agents/encuesta-hogares.md).

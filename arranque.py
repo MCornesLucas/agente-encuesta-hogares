@@ -8,5 +8,5 @@ que `abrir_agente.bat` la capture.
 
 from encuesta_hogares import formularios
 
-respuesta = formularios.mostrar_formulario(formularios.plantilla_arranque(), timeout=1800)
+respuesta = formularios.mostrar_formulario(formularios.plantilla_arranque())
 print("EMPEZAR" if respuesta.get("accion") == "empezar" else "SALIR")

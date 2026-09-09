@@ -23,7 +23,7 @@ import threading
 import traceback
 from pathlib import Path
 
-from . import bitacora, cierre
+from . import bitacora, cierre, config
 from .plantillas import (  # noqa: F401 — reexports: la cara pública es formularios.plantilla_*
     _CATEGORIA_EMPLEO,
     _CATEGORIA_FIES,
@@ -199,7 +199,7 @@ def _servir_y_esperar(handler_cls, evento: threading.Event, timeout: float | Non
     return completado
 
 
-def mostrar_formulario(html: str, timeout: float | None = 1800) -> dict:
+def mostrar_formulario(html: str, timeout: float | None = config.TIMEOUT_FORMULARIO_SEGUNDOS) -> dict:
     """Sirve `html` en localhost, abre el navegador, y bloquea hasta que el
     usuario lo completa. Devuelve lo que haya mandado el formulario.
     """
@@ -265,7 +265,7 @@ def mostrar_formulario(html: str, timeout: float | None = 1800) -> dict:
     return resultado
 
 
-def mostrar_finalizacion(pdf_path: str = "", html_path: str = "", timeout: float | None = 1800) -> dict:
+def mostrar_finalizacion(pdf_path: str = "", html_path: str = "", timeout: float | None = config.TIMEOUT_FORMULARIO_SEGUNDOS) -> dict:
     """Último paso: pantalla de agradecimiento con links que abren el PDF
     y/o el HTML del informe. A diferencia de `start` desde la terminal (poco
     confiable — se vio en la práctica que podía fallar en silencio), estos
