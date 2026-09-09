@@ -55,7 +55,7 @@ from pathlib import Path
 
 import nbformat
 
-from . import bitacora, config, entrega, verificacion_catalogo, verificacion_notebook
+from . import bitacora, config, entrega, verificacion_catalogo, verificacion_notebook, verificacion_plausibilidad
 from . import notebook_builder as nb
 
 NOTEBOOKS = config.PROJECT_ROOT / "notebooks"
@@ -159,6 +159,13 @@ def construir(
         raise InformeInvalido("El notebook se ejecutó pero tiene problemas:\n- " + "\n- ".join(problemas))
 
     cifras = nb.ruta_cifras(destino)
+    hallazgos = _revisar_plausibilidad(cifras)
+    if hallazgos:
+        bitacora.registrar("verificacion_notebook_bloqueo", etapa="plausibilidad", hallazgos=hallazgos)
+        raise InformeInvalido(
+            "El notebook se ejecutó pero alguna cifra no es plausible o rompe una identidad estadística "
+            "(no se compara contra el INE: se verifica que el resultado no sea imposible):\n- " + "\n- ".join(hallazgos)
+        )
     return {
         "notebook": str(destino),
         "cifras": str(cifras) if cifras.exists() else None,
@@ -166,6 +173,19 @@ def construir(
         "bloques": _bloques_de(metricas),
         "celdas": len(notebook["cells"]),
     }
+
+
+def _revisar_plausibilidad(ruta_cifras: Path) -> list[str]:
+    """Las cifras ejecutadas que `verificacion_plausibilidad` sabe juzgar:
+    identidades que se cumplen siempre (empleo ≤ actividad, indigencia ≤
+    pobreza...) y rangos anchos anclados en magnitudes del INE. Antes solo
+    corría en `tools/validar_con_datos_reales.py`, es decir, nunca en una
+    corrida real; un disparate podía llegar a un informe entregado."""
+    if not ruta_cifras.exists():
+        return []
+    cifras = json.loads(ruta_cifras.read_text(encoding="utf-8"))
+    indicadores = verificacion_notebook.indicadores_para_plausibilidad(cifras)
+    return [str(h) for h in verificacion_plausibilidad.revisar(indicadores)]
 
 
 def _registrar_reejecucion_si_corresponde(destino: Path, motivo: str | None) -> None:

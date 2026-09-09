@@ -20,10 +20,12 @@ ejecutar* el trabajo una vez que las reglas ya están claras.
    ```
    Arma el notebook (`notebook_builder`), lo verifica antes de ejecutarlo
    (`verificacion_notebook.verificar_antes_de_ejecutar`: gráficas
-   duplicadas, métricas sin gráfica o sin cita, texto sin completar,
-   encabezados repetidos), lo ejecuta **una sola vez** cronometrado en la
-   bitácora (`ejecucion_notebook`), verifica el resultado (celdas con
-   error, gráficas sin imagen) y deja las cifras de cada métrica en
+   duplicadas, métricas sin gráfica o sin cita de un autor de
+   `BIBLIOGRAFIA.md`, estadísticas crudas sin ponderar, texto sin
+   completar, encabezados repetidos), lo ejecuta **una sola vez**
+   cronometrado en la bitácora (`ejecucion_notebook`), verifica el
+   resultado (celdas con error, gráficas sin imagen, cifras imposibles
+   según `verificacion_plausibilidad`) y deja las cifras de cada métrica en
    `notebooks/_cifras_Informe_ECH_<año>.json`.
 5. Redactar el resumen analítico leyendo ese JSON (nunca recalculando ni
    de memoria) y entregarlo:

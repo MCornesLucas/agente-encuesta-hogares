@@ -736,12 +736,20 @@ Qué hace el comando por dentro (no hay que repetir nada de esto a mano):
    "(anterior)" se dispare solo cuando se repite el mismo año.
 2. **Verifica el notebook antes de ejecutarlo**: gráficas que se
    duplicarían (variable suelta después de `viz.plot_...`), métricas sin
-   gráfica o sin cita en la justificación, texto sin completar,
-   encabezados repetidos. Si algo falla, no ejecuta.
+   gráfica o cuya justificación no cita a un autor de
+   `docs/BIBLIOGRAFIA.md` (una cita con forma correcta pero fuera de la
+   bibliografía no alcanza: la fuente se agrega primero ahí), celdas con
+   estadísticas crudas sin ponderar (`.mean()`, `.median()`,
+   `.value_counts()` en vez de los helpers ponderados de `analysis.py`),
+   texto sin completar, encabezados repetidos. Si algo falla, no ejecuta.
 3. Lo ejecuta una sola vez con `jupyter nbconvert`, medido en la bitácora
    como `ejecucion_notebook`.
 4. **Verifica el resultado**: ninguna celda con error, ninguna gráfica sin
-   imagen.
+   imagen, y ninguna cifra imposible — identidades que se cumplen siempre
+   (empleo ≤ actividad, indigencia ≤ pobreza, severa ≤ moderada o severa)
+   y rangos anchos anclados en magnitudes del INE
+   (`verificacion_plausibilidad`). No se compara contra el INE: se
+   verifica que el resultado no sea un disparate.
 5. Deja en `notebooks/_cifras_Informe_ECH_{año}.json` todas las tablas y
    valores que calcularon las métricas — de ahí salen los números del
    resumen analítico (paso 8).

@@ -1450,7 +1450,8 @@ def celda_cifras(ruta_notebook: Path | str) -> Celda:
     salta. Es la fuente de la que el modelo saca los números del resumen y
     contra la que `generar_informe.entregar` valida cada cifra."""
     destino = str(ruta_cifras(ruta_notebook)).replace("\\", "/")
-    codigo = f"""import json as _json
+    codigo = f"""import dataclasses as _dataclasses
+import json as _json
 import numbers as _numbers
 
 _cifras = {{}}
@@ -1466,8 +1467,9 @@ for _nombre, _valor in list(globals().items()):
             _cifras[_nombre] = {{str(k): round(float(v), 2) for k, v in _valor.items()}}
         elif isinstance(_valor, _numbers.Number) and not isinstance(_valor, bool):
             _cifras[_nombre] = round(float(_valor), 2)
-        elif hasattr(_valor, "_asdict"):
-            _cifras[_nombre] = {{k: (round(float(v), 2) if isinstance(v, _numbers.Number) else str(v)) for k, v in _valor._asdict().items()}}
+        elif hasattr(_valor, "_asdict") or (_dataclasses.is_dataclass(_valor) and not isinstance(_valor, type)):
+            _campos = _valor._asdict() if hasattr(_valor, "_asdict") else _dataclasses.asdict(_valor)
+            _cifras[_nombre] = {{k: (round(float(v), 2) if isinstance(v, _numbers.Number) else str(v)) for k, v in _campos.items()}}
     except Exception:
         continue
 with open(r"{destino}", "w", encoding="utf-8") as _f:

@@ -24,16 +24,43 @@ es el equivalente para el pipeline.
 
 from __future__ import annotations
 
+import ast
 import re
+from functools import lru_cache
+from pathlib import Path
 from typing import Iterable
 
-# Mismos autores que reconoce _lib_check_notebook_metrica_sin_grafica_o_cita.cjs.
-AUTORES_CONOCIDOS = (
-    "Cleveland", "McGill", "Tufte", "Knaflic", "Few", "Ware", "Wilke",
-    "Nightingale", "Data Visualization Society", "Hofmann", "Wickham",
-    "Kafadar", "Weissgerber", "storytellingwithdata",
-)
-_CITA_GENERICA = re.compile(r"\([A-ZÀ-Ý][\wÀ-ÿ.]+(?:\s*(?:&|y|et al\.?)\s*[A-ZÀ-Ý][\wÀ-ÿ.]+)?,?\s*\d{4}\)")
+from . import verificacion_ponderacion
+
+_BIBLIOGRAFIA = Path(__file__).resolve().parents[2] / "docs" / "BIBLIOGRAFIA.md"
+
+# Nombres de organismos o sitios que la bibliografía cita sin apellido.
+_ORGANISMOS_CITABLES = ("Data Visualization Society", "storytellingwithdata")
+
+
+@lru_cache(maxsize=1)
+def autores_de_la_bibliografia() -> tuple[str, ...]:
+    """Apellidos y organismos citables según `docs/BIBLIOGRAFIA.md`: el
+    primer apellido de cada viñeta más los coautores ("& McGill", "y
+    Wickham"). Una justificación solo cuenta como fundamentada si cita a
+    alguien que está ahí — la bibliografía es la fuente de verdad, no una
+    lista escrita aparte en el código (regla del dueño: toda métrica se
+    justifica con la bibliografía del proyecto)."""
+    if not _BIBLIOGRAFIA.exists():
+        return _ORGANISMOS_CITABLES
+    texto = _BIBLIOGRAFIA.read_text(encoding="utf-8")
+    autores: list[str] = []
+    for viñeta in re.findall(r"^- (.+)$", texto, flags=re.MULTILINE):
+        cabeza = viñeta.split("(")[0]  # hasta el año o el paréntesis
+        # Apellidos con mayúscula interna (McGill) y compuestos (Rodríguez-Miranda) incluidos.
+        autores += re.findall(r"(?:^|[&y,;]\s+)([A-ZÀ-Ý][A-Za-zà-ÿ]+(?:-[A-ZÀ-Ý][A-Za-zà-ÿ]+)?)(?=,|\s+[A-Z]\.|\s*$|\s+&|\s+y\s)", cabeza.strip())
+    for organismo in _ORGANISMOS_CITABLES:
+        if organismo.lower() in texto.lower():
+            autores.append(organismo)
+    return tuple(dict.fromkeys(a for a in autores if len(a) > 2))
+
+
+_CITA_GENERICA = re.compile(r"\(([A-ZÀ-Ý][\wÀ-ÿ.]+)(?:\s*(?:&|y|et al\.?)\s*[A-ZÀ-Ý][\wÀ-ÿ.]+)?,?\s*\d{4}\)")
 _ENCABEZADO_METRICA = re.compile(r"^#{2,4}\s*(?:M[ée]trica\s+)?(\d{1,2})[.\s—-]")
 _ENCABEZADO_SECCION = re.compile(r"^##\s+(?!\d)")
 _VARIABLE_SOLA = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -119,7 +146,14 @@ def _grupos_de_metrica(nb: dict) -> list[dict]:
 
 
 def tiene_cita_con_fundamento(texto: str) -> bool:
-    return any(autor in texto for autor in AUTORES_CONOCIDOS) or bool(_CITA_GENERICA.search(texto))
+    """La justificación cita a un autor u organismo que está en
+    `docs/BIBLIOGRAFIA.md`. Un paréntesis con forma de cita («(Autor,
+    2004)») cuyo autor no figura en la bibliografía NO alcanza: la fuente
+    se agrega primero a la bibliografía y después se cita."""
+    autores = autores_de_la_bibliografia()
+    if any(re.search(rf"(?<![\wÀ-ÿ]){re.escape(autor)}(?![\wÀ-ÿ])", texto) for autor in autores):
+        return True
+    return any(m.group(1) in autores for m in _CITA_GENERICA.finditer(texto))
 
 
 def metricas_sin_grafica_o_cita(nb: dict) -> list[str]:
@@ -172,10 +206,42 @@ def encabezados_repetidos(nb: dict) -> list[str]:
     return problemas
 
 
+def calculos_sin_ponderar(nb: dict) -> list[str]:
+    """Celdas de código que calculan una estadística cruda (`.mean()`,
+    `.median()`, `.value_counts()`) en vez de pasar por los helpers
+    ponderados de `analysis.py`. Es la misma señal que
+    `verificacion_ponderacion` busca en los módulos, aplicada a las celdas
+    del informe — sobre todo a las escritas a mano, que no pasan por los
+    tests de la suite. Una estadística de la ECH sin ponderador de
+    expansión no describe a la población: regla no negociable del
+    proyecto (docs/METODOLOGIA.md, sección 2)."""
+    problemas = []
+    for i, celda in enumerate(nb.get("cells", [])):
+        if celda.get("cell_type") != "code":
+            continue
+        codigo = "\n".join(
+            linea for linea in _fuente(celda).split("\n") if not linea.lstrip().startswith(("%", "!"))
+        )
+        try:
+            arbol = ast.parse(codigo)
+        except SyntaxError as e:
+            problemas.append(f"celda {i}: no es Python válido ({e.msg}, línea {e.lineno})")
+            continue
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.Attribute) and nodo.attr in verificacion_ponderacion.METODOS_CRUDOS:
+                problemas.append(
+                    f"celda {i}: usa .{nodo.attr}() crudo (línea {nodo.lineno}); toda estadística de la "
+                    "encuesta se pondera con los helpers de analysis.py (pct_ponderado, media_ponderada_por, "
+                    "pct_ponderado_por...)"
+                )
+    return problemas
+
+
 def verificar_antes_de_ejecutar(nb: dict) -> list[str]:
     return (
         celdas_que_duplican_grafica(nb)
         + metricas_sin_grafica_o_cita(nb)
+        + calculos_sin_ponderar(nb)
         + placeholders_en_el_texto(nb)
         + encabezados_repetidos(nb)
     )
@@ -295,6 +361,35 @@ def _numeros_anidados(valor) -> Iterable[float]:
 def numeros_de_cifras(cifras: dict) -> list[float]:
     """Todos los números del JSON que escribe la celda de cifras."""
     return list(_numeros_anidados(cifras))
+
+
+# Variable del notebook → indicador de verificacion_plausibilidad.RANGOS.
+# Cada entrada: (nombre de la variable en el JSON de cifras, clave dentro
+# de esa variable, nombre del indicador). Solo se mapean variables cuyo
+# significado es exactamente el del indicador; lo que no está acá no se
+# opina (mejor no opinar que opinar mal).
+_INDICADORES_PLAUSIBILIDAD = (
+    ("tasas_nacionales", "tasa_actividad", "tasa_actividad"),
+    ("tasas_nacionales", "tasa_empleo", "tasa_empleo"),
+    ("tasas_nacionales", "tasa_desempleo", "tasa_desempleo"),
+    ("pobreza", "pct_pobres", "pct_pobres"),
+    ("pobreza", "pct_indigentes", "pct_indigentes"),
+    ("resumen_conectividad_mdeo", "pct_con_internet", "pct_con_internet"),
+    ("prevalencia_fies", "moderada_o_severa", "pct_inseguridad_alimentaria"),
+    ("prevalencia_fies", "severa", "pct_inseguridad_severa"),
+)
+
+
+def indicadores_para_plausibilidad(cifras: dict) -> dict[str, float]:
+    """Las cifras ejecutadas del informe que `verificacion_plausibilidad`
+    sabe juzgar (identidades que siempre se cumplen y rangos anchos
+    anclados en el INE). Toma solo lo presente en esta edición."""
+    indicadores: dict[str, float] = {}
+    for variable, clave, indicador in _INDICADORES_PLAUSIBILIDAD:
+        valor = cifras.get(variable)
+        if isinstance(valor, dict) and isinstance(valor.get(clave), (int, float)) and not isinstance(valor.get(clave), bool):
+            indicadores[indicador] = float(valor[clave])
+    return indicadores
 
 
 def cifras_sin_respaldo(texto_resumen: str, reales: Iterable[float]) -> list[str]:

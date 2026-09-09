@@ -253,3 +253,61 @@ def test_la_portada_del_pdf_lleva_titulo_subtitulo_y_solo_la_fecha():
     assert re.search(r"Generado el \d{1,2} de [a-z]+ de \d{4}", texto)
     assert "proyecto" not in texto.lower() and "agente" not in texto.lower()
     assert ".portada" in gi.ESTILO_CSS.read_text(encoding="utf-8")
+
+
+# --- rigor: bibliografía y ponderación ----------------------------------------
+
+
+def test_los_autores_citables_salen_de_la_bibliografia_real():
+    autores = vn.autores_de_la_bibliografia()
+    for esperado in ("Cleveland", "McGill", "Tufte", "Knaflic", "Ware", "Wilke", "Healy"):
+        assert esperado in autores, (esperado, autores)
+
+
+def test_una_cita_con_forma_correcta_pero_fuera_de_la_bibliografia_no_alcanza():
+    assert vn.tiene_cita_con_fundamento("Barras horizontales (Cleveland & McGill, 1984).")
+    assert vn.tiene_cita_con_fundamento("Dumbbell (Tufte; Knaflic, storytellingwithdata.com).")
+    assert not vn.tiene_cita_con_fundamento("Barras porque sí (Pérez, 2004).")
+    assert not vn.tiene_cita_con_fundamento("Sin ninguna fuente.")
+
+
+def test_toda_metrica_del_catalogo_cita_a_alguien_de_la_bibliografia(tmp_path):
+    notebook = _notebook_real(tmp_path)
+    assert vn.metricas_sin_grafica_o_cita(notebook) == []
+
+
+def test_un_calculo_crudo_en_una_celda_a_mano_bloquea_antes_de_ejecutar(tmp_path):
+    notebook = _notebook_real(tmp_path, metricas=[1])
+    assert vn.calculos_sin_ponderar(notebook) == [], "las plantillas del catálogo no calculan nada crudo"
+    notebook["cells"].append(_celda_code("tasa = hogares['pobre'].mean() * 100\nfig = viz.plot_x(tasa)\nfig.show()"))
+    problemas = vn.calculos_sin_ponderar(notebook)
+    assert len(problemas) == 1 and ".mean()" in problemas[0] and "pondera" in problemas[0]
+    assert any(".mean()" in p for p in vn.verificar_antes_de_ejecutar(notebook))
+
+
+def test_las_cifras_ejecutadas_se_mapean_a_los_indicadores_de_plausibilidad():
+    from encuesta_hogares import verificacion_plausibilidad as vp
+    cifras = {
+        "tasas_nacionales": {"tasa_actividad": 64.5, "tasa_empleo": 59.7, "tasa_desempleo": 7.4},
+        "pobreza": {"pct_pobres": 14.1, "pct_indigentes": 0.3},
+        "resumen_conectividad_mdeo": {"total_hogares": 9000, "pct_con_internet": 89.2},
+        "prevalencia_fies": {"moderada_o_severa": 13.0, "severa": 3.1},
+        "otra_tabla": [{"x": 1}],
+    }
+    indicadores = vn.indicadores_para_plausibilidad(cifras)
+    assert indicadores["tasa_desempleo"] == 7.4 and indicadores["pct_inseguridad_severa"] == 3.1
+    assert vp.revisar(indicadores) == []
+    # Un disparate real (proporción confundida con porcentaje) o una identidad rota se detectan.
+    cifras["pobreza"]["pct_pobres"] = 0.14
+    cifras["tasas_nacionales"]["tasa_empleo"] = 70.0
+    hallazgos = vp.revisar(vn.indicadores_para_plausibilidad(cifras))
+    assert any(h.indicador == "pct_pobres" for h in hallazgos)
+    assert any(h.indicador == "tasa_empleo" and "actividad" in h.motivo for h in hallazgos)
+
+
+def test_construir_corta_si_las_cifras_ejecutadas_no_son_plausibles(tmp_path, monkeypatch):
+    ruta_cifras = tmp_path / "_cifras_x.json"
+    ruta_cifras.write_text(json.dumps({"tasas_nacionales": {"tasa_actividad": 64.0, "tasa_empleo": 80.0, "tasa_desempleo": 7.0}}), encoding="utf-8")
+    hallazgos = gi._revisar_plausibilidad(ruta_cifras)
+    assert hallazgos and "tasa_empleo" in hallazgos[0]
+    assert gi._revisar_plausibilidad(tmp_path / "no_existe.json") == []
