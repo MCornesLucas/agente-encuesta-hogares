@@ -10,6 +10,34 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.14.2] — 2026-09-09
+
+### Agregado
+
+- **Tres reglas no negociables pasan a ser verificaciones que bloquean el
+  informe**, en vez de depender de que el modelo las recuerde:
+  - Justificación con la bibliografía: los autores citables salen de
+    `docs/BIBLIOGRAFIA.md`; una cita con forma correcta pero cuyo autor no
+    está en la bibliografía no alcanza.
+  - Ponderación: cualquier celda del informe con `.mean()`, `.median()` o
+    `.value_counts()` crudos bloquea antes de ejecutar.
+  - Plausibilidad: después de ejecutar, las cifras (tasas de actividad,
+    empleo y desempleo; pobreza e indigencia; conectividad; inseguridad
+    alimentaria) se revisan con `verificacion_plausibilidad` — identidades
+    que siempre se cumplen y rangos anchos anclados en el INE. Antes solo
+    corría en la herramienta de validación, nunca en una corrida real.
+
+### Cambiado
+
+- **Un solo modelo por corrida.** Las instrucciones del flujo viven en
+  `.claude/instrucciones/encuesta-hogares.md` y `CLAUDE.md` las importa:
+  la misma sesión que abre `abrir_agente.bat` sigue el flujo, sin delegar
+  a un subagente. El modelo lo fija solo el `.bat`, con un test que exige
+  que las instrucciones declaren el mismo.
+- **Catálogo único.** Los números de cada bloque y las plantillas del
+  informe se derivan del catálogo de `plantillas.py` y del manifiesto;
+  ya no hay rangos escritos a mano en tres lugares.
+
 ## [0.14.1] — 2026-09-09
 
 ### Cambiado
