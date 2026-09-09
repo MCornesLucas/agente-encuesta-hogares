@@ -1,7 +1,7 @@
 // Módulo compartido por los tres hooks que necesitan saber sobre qué
 // notebook corre un `jupyter nbconvert --execute` disparado por la
-// herramienta Bash (gate-notebook-sin-duplicados.cjs,
-// gate-notebook-metrica-sin-grafica-o-cita.cjs,
+// herramienta Bash (_lib_check_notebook_sin_duplicados.cjs,
+// _lib_check_notebook_metrica_sin_grafica_o_cita.cjs,
 // gate-notebook-graficas-faltantes.cjs).
 //
 // Bug real encontrado replicando el patrón exacto que documenta

@@ -46,16 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-notebook-sin-duplicados.cjs\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-resumen-cifras-inventadas.cjs\""
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-notebook.cjs\""
           }
         ]
       },
@@ -74,15 +65,6 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-no-git-indirecto.cjs\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/gate-notebook-metrica-sin-grafica-o-cita.cjs\""
           }
         ]
       }

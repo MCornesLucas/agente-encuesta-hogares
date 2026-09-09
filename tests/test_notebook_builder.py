@@ -340,7 +340,7 @@ def test_una_metrica_sin_bloque_no_se_pierde_en_silencio():
 
 def test_toda_metrica_justifica_su_grafica_citando_una_fuente():
     """El mismo criterio que hace cumplir
-    `.claude/hooks/gate-notebook-metrica-sin-grafica-o-cita.cjs`, pero del
+    `.claude/hooks/_lib_check_notebook_metrica_sin_grafica_o_cita.cjs`, pero del
     lado de Python, que es donde se escriben las justificaciones.
 
     Nace de que el hook estuvo un tiempo mirando un formato de encabezado

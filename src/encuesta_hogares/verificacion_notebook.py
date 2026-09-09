@@ -27,7 +27,7 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
-# Mismos autores que reconoce gate-notebook-metrica-sin-grafica-o-cita.cjs.
+# Mismos autores que reconoce _lib_check_notebook_metrica_sin_grafica_o_cita.cjs.
 AUTORES_CONOCIDOS = (
     "Cleveland", "McGill", "Tufte", "Knaflic", "Few", "Ware", "Wilke",
     "Nightingale", "Data Visualization Society", "Hofmann", "Wickham",
@@ -74,7 +74,7 @@ def _tiene_imagen(celda: dict) -> bool:
 def celdas_que_duplican_grafica(nb: dict) -> list[str]:
     """Celdas de código que terminan con la variable sola después de
     asignarla con `viz.plot_...` — con el renderer PNG de Plotly eso
-    muestra la gráfica dos veces (gate-notebook-sin-duplicados.cjs)."""
+    muestra la gráfica dos veces (_lib_check_notebook_sin_duplicados.cjs)."""
     problemas = []
     for i, celda in enumerate(nb.get("cells", [])):
         if celda.get("cell_type") != "code":
@@ -299,7 +299,7 @@ def numeros_de_cifras(cifras: dict) -> list[float]:
 
 def cifras_sin_respaldo(texto_resumen: str, reales: Iterable[float]) -> list[str]:
     """Cifras del resumen que no coinciden, redondeadas a sus propios
-    decimales, con ningún número real (gate-resumen-cifras-inventadas.cjs)."""
+    decimales, con ningún número real (_lib_check_resumen_cifras_inventadas.cjs)."""
     reales = list(reales)
     sospechosas = []
     for texto, valor, decimales in cifras_de(texto_resumen):

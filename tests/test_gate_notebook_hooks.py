@@ -1,5 +1,5 @@
 """Prueba los tres hooks que gatean sobre `jupyter nbconvert --execute`
-(gate-notebook-sin-duplicados.cjs, gate-notebook-metrica-sin-grafica-o-cita.cjs,
+(_lib_check_notebook_sin_duplicados.cjs, _lib_check_notebook_metrica_sin_grafica_o_cita.cjs,
 gate-notebook-graficas-faltantes.cjs) invocándolos de verdad con Node (pipe
 de stdin, igual que lo hace Claude Code) — no una reimplementación en
 Python de su lógica. Mismo enfoque que test_gate_primer_paso.py y
@@ -110,14 +110,14 @@ class TestDeteccionDeNbconvertOcultoEnPy:
     def test_sin_duplicados_bloquea_via_write_y_run_python_bat(self, tmp_path):
         _escribir_notebook(tmp_path, "nb.ipynb", _NOTEBOOK_CON_DUPLICADO)
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        resultado = _correr_hook("gate-notebook-sin-duplicados.cjs", comando, tmp_path)
+        resultado = _correr_hook("_lib_check_notebook_sin_duplicados.cjs", comando, tmp_path)
         assert resultado is not None
         assert resultado["hookSpecificOutput"]["permissionDecision"] == "deny"
 
     def test_sin_duplicados_permite_notebook_limpio_via_write_y_run_python_bat(self, tmp_path):
         _escribir_notebook(tmp_path, "nb.ipynb", _NOTEBOOK_LIMPIO)
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        assert _correr_hook("gate-notebook-sin-duplicados.cjs", comando, tmp_path) is None
+        assert _correr_hook("_lib_check_notebook_sin_duplicados.cjs", comando, tmp_path) is None
 
     def test_graficas_faltantes_bloquea_celda_sin_output_via_write_y_run_python_bat(self, tmp_path):
         _escribir_notebook(tmp_path, "nb.ipynb", _NOTEBOOK_SIN_OUTPUT)
@@ -138,12 +138,12 @@ class TestDeteccionDeNbconvertOcultoEnPy:
         # ciegas por falta de encabezados de métrica.
         _escribir_notebook(tmp_path, "nb.ipynb", _NOTEBOOK_LIMPIO)
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        assert _correr_hook("gate-notebook-metrica-sin-grafica-o-cita.cjs", comando, tmp_path) is None
+        assert _correr_hook("_lib_check_notebook_metrica_sin_grafica_o_cita.cjs", comando, tmp_path) is None
 
     def test_ningun_hook_se_dispara_sin_mencion_a_nbconvert(self, tmp_path):
         for hook in (
-            "gate-notebook-sin-duplicados.cjs",
-            "gate-notebook-metrica-sin-grafica-o-cita.cjs",
+            "_lib_check_notebook_sin_duplicados.cjs",
+            "_lib_check_notebook_metrica_sin_grafica_o_cita.cjs",
             "gate-notebook-graficas-faltantes.cjs",
         ):
             assert _correr_hook(hook, "run_python.bat tools/validar_con_datos_reales.py", tmp_path) is None
@@ -178,7 +178,7 @@ class TestElHookReconoceLosEncabezadosQueEmiteNotebookBuilder:
             self._celda_md("*Por qué esta gráfica: porque se ve lindo.*"),
         ]))
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        resultado = _correr_hook("gate-notebook-metrica-sin-grafica-o-cita.cjs", comando, tmp_path)
+        resultado = _correr_hook("_lib_check_notebook_metrica_sin_grafica_o_cita.cjs", comando, tmp_path)
         assert resultado is not None
         assert resultado["hookSpecificOutput"]["permissionDecision"] == "deny"
         assert "Métrica 8" in resultado["hookSpecificOutput"]["permissionDecisionReason"]
@@ -193,7 +193,7 @@ class TestElHookReconoceLosEncabezadosQueEmiteNotebookBuilder:
                            "que comparar ángulos (Cleveland & McGill, 1984).*"),
         ]))
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        assert _correr_hook("gate-notebook-metrica-sin-grafica-o-cita.cjs", comando, tmp_path) is None
+        assert _correr_hook("_lib_check_notebook_metrica_sin_grafica_o_cita.cjs", comando, tmp_path) is None
 
     def test_la_cita_del_tema_siguiente_no_tapa_una_metrica_sin_cita(self, tmp_path):
         # Sin cortar en el "## " del tema siguiente, la cita de la métrica 9
@@ -207,7 +207,7 @@ class TestElHookReconoceLosEncabezadosQueEmiteNotebookBuilder:
             self._celda_md("*Por qué esta gráfica: (Cleveland & McGill, 1984).*"),
         ]))
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        resultado = _correr_hook("gate-notebook-metrica-sin-grafica-o-cita.cjs", comando, tmp_path)
+        resultado = _correr_hook("_lib_check_notebook_metrica_sin_grafica_o_cita.cjs", comando, tmp_path)
         assert resultado is not None
         motivo = resultado["hookSpecificOutput"]["permissionDecisionReason"]
         assert "Métrica 8" in motivo and "Métrica 13" not in motivo
@@ -233,5 +233,53 @@ class TestElHookReconoceLosEncabezadosQueEmiteNotebookBuilder:
         )
         nb.escribir_notebook(celdas, tmp_path / "nb.ipynb")
         comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
-        resultado = _correr_hook("gate-notebook-metrica-sin-grafica-o-cita.cjs", comando, tmp_path)
+        resultado = _correr_hook("_lib_check_notebook_metrica_sin_grafica_o_cita.cjs", comando, tmp_path)
         assert resultado is None, resultado
+
+
+@pytest.mark.skipif(not _NODE_DISPONIBLE, reason="node no está disponible en esta máquina")
+class TestGateNotebookUnificado:
+    """`gate-notebook.cjs` es el único hook de notebook registrado en
+    settings.json: corre las tres verificaciones leyendo el .ipynb una
+    sola vez (antes eran tres procesos por cada llamada Bash). Se prueba
+    contra el notebook real que arma `notebook_builder` y contra copias
+    saboteadas — nunca contra un dict de una celda solamente."""
+
+    def _notebook_real(self, tmp_path):
+        from encuesta_hogares import notebook_builder as nb
+        from encuesta_hogares import verificacion_catalogo as vc
+
+        celdas = nb.construir_celdas_notebook(
+            anio_base=2025, metricas=sorted(vc.MANIFEST),
+            incluir_brecha_digital=True, incluir_fies=True, incluir_empleo=True, incluir_seguridad=True,
+        )
+        nb.escribir_notebook(celdas, tmp_path / "nb.ipynb")
+        return json.loads((tmp_path / "nb.ipynb").read_text(encoding="utf-8"))
+
+    def test_deja_pasar_el_informe_real_completo(self, tmp_path):
+        self._notebook_real(tmp_path)
+        comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
+        assert _correr_hook("gate-notebook.cjs", comando, tmp_path) is None
+
+    def test_bloquea_el_informe_real_con_una_grafica_duplicada_y_una_metrica_sin_cita(self, tmp_path):
+        notebook = self._notebook_real(tmp_path)
+        # Sabotaje 1: la primera gráfica termina con la variable suelta.
+        celda = next(c for c in notebook["cells"] if c["cell_type"] == "code" and "viz.plot_" in "".join(c["source"]))
+        celda["source"] = "".join(celda["source"]).replace("fig.show()", "fig")
+        # Sabotaje 2: la métrica 8 pierde su justificación con la cita.
+        i8 = next(i for i, c in enumerate(notebook["cells"]) if c["cell_type"] == "markdown"
+                  and "".join(c["source"]).startswith("### 8."))
+        for c in notebook["cells"][i8 + 1:]:
+            if c["cell_type"] == "markdown":
+                if "".join(c["source"]).startswith("### "):
+                    break
+                c["source"] = "Sin referencia."
+        _escribir_notebook(tmp_path, "nb.ipynb", notebook)
+        comando = _escribir_script_ejecutor(tmp_path, "ejecutar.py", "nb.ipynb")
+        resultado = _correr_hook("gate-notebook.cjs", comando, tmp_path)
+        razon = resultado["hookSpecificOutput"]["permissionDecisionReason"]
+        assert resultado["hookSpecificOutput"]["permissionDecision"] == "deny"
+        assert "duplicar su gráfica" in razon and "Métrica 8" in razon
+
+    def test_ignora_comandos_que_no_ejecutan_un_notebook(self, tmp_path):
+        assert _correr_hook("gate-notebook.cjs", "run_python.bat -m encuesta_hogares.generar_informe construir --anio 2025 --metricas 1", tmp_path) is None

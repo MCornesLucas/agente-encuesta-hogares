@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-_HOOK = Path(__file__).resolve().parents[1] / ".claude" / "hooks" / "gate-resumen-cifras-inventadas.cjs"
+_HOOK = Path(__file__).resolve().parents[1] / ".claude" / "hooks" / "_lib_check_resumen_cifras_inventadas.cjs"
 _NODE_DISPONIBLE = subprocess.run(["node", "--version"], capture_output=True).returncode == 0
 
 

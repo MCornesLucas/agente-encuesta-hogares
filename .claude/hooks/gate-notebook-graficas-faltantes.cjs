@@ -1,4 +1,4 @@
-// Hook PostToolUse: complementa gate-notebook-sin-duplicados.cjs (que
+// Hook PostToolUse: complementa _lib_check_notebook_sin_duplicados.cjs (que
 // corre ANTES de ejecutar el notebook y mira solo el código fuente) con un
 // chequeo que solo se puede hacer DESPUÉS de ejecutar: ¿alguna celda que
 // llama a una función viz.plot_...() terminó sin producir ningún output?

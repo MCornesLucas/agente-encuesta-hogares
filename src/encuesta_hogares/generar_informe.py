@@ -19,7 +19,7 @@ Imprime un JSON con las rutas.
 `entregar`: toma el resumen analítico redactado (un archivo markdown que
 el modelo escribe leyendo el JSON de cifras), valida que cada cifra que
 cita exista de verdad en los resultados ejecutados (misma regla que
-`gate-resumen-cifras-inventadas.cjs`, con las tablas del JSON como parte
+`_lib_check_resumen_cifras_inventadas.cjs`, con las tablas del JSON como parte
 del respaldo), lo agrega al final del notebook junto con la lista de
 fuentes de consulta de los bloques presentes —sin volver a ejecutar
 nada—, y genera el HTML sin código y el PDF con portada, con copia en

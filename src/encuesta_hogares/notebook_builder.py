@@ -262,7 +262,7 @@ _JUSTIFICACION_POR_FAMILIA = {
 }
 
 # Toda familia lleva su cita: el hook
-# `.claude/hooks/gate-notebook-metrica-sin-grafica-o-cita.cjs` bloquea la
+# `.claude/hooks/_lib_check_notebook_metrica_sin_grafica_o_cita.cjs` bloquea la
 # ejecución del notebook si alguna métrica no la tiene. "barras_100" y
 # "heatmap" salieron sin cita hasta la v0.13.0 — el hook no las detectaba
 # porque buscaba un formato de encabezado que este módulo ya no emite, así
