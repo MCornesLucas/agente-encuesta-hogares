@@ -144,6 +144,28 @@ def test_la_preparacion_de_un_tema_abre_ese_tema_y_no_el_informe():
         assert cabezas[i + 1].startswith("### "), "y antes de la primera métrica del tema"
 
 
+def test_el_empleo_se_carga_una_sola_vez_aunque_lo_usen_varias_metricas():
+    """Hasta la v0.13.6, un informe con las 42 métricas llamaba a
+    `load_empleo` cinco veces (preparación del bloque Empleo más una por
+    cada métrica del índice territorial, 13, 14 y 15): los 12 archivos
+    mensuales se leían y el índice se calculaba de nuevo en cada una.
+    Ahora la preparación general lo carga una vez y las demás celdas
+    derivan de `empleo_prep`."""
+    from encuesta_hogares import verificacion_catalogo as vc
+
+    for metricas in ([13, 14, 15], [28, 29], [13, 28], sorted(vc.MANIFEST)):
+        celdas = nb.construir_celdas_notebook(
+            anio_base=2025, metricas=metricas, incluir_brecha_digital=True,
+            incluir_fies=True, incluir_empleo=True, incluir_seguridad=True,
+        )
+        codigo = "\n".join(c.codigo for c in celdas)
+        assert codigo.count("load_empleo(") == 1, metricas
+        assert codigo.count("analysis.indice_desarrollo_territorial(") == (1 if 13 in metricas else 0), metricas
+        # Lo que se define antes se usa después: la carga va antes del primer uso.
+        assert codigo.index("load_empleo(") < codigo.index("empleo_prep[") if "empleo_prep[" in codigo else True
+        assert codigo.index("load_empleo(") < codigo.index("normalizar_departamento(empleo_prep)") if 13 in metricas else True
+
+
 def test_no_se_carga_empleo_si_no_quedo_ninguna_metrica_de_empleo():
     """Consecuencia buena del cambio anterior: la preparación cuelga del
     tema, así que sin métricas de ese tema no se carga el archivo."""

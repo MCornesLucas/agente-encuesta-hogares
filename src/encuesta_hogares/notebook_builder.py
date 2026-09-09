@@ -100,10 +100,19 @@ cual. Es el mismo criterio que usa el propio INE en sus publicaciones
 oficiales, no una decisión de este informe.'''
 
 
-def celda_preparacion_datos(anio_base: int, incluir_fies: bool) -> Celda:
+def celda_preparacion_datos(anio_base: int, incluir_fies: bool, incluir_empleo: bool = False) -> Celda:
     """La única celda que siempre se genera — infraestructura, no un bloque
     temático (ver docs/METODOLOGIA.md, sección 1). Envuelve la carga con
     `bitacora.medir("carga_de_datos")`, como indica el paso 5 del agente.
+
+    `incluir_empleo`: los 12 archivos mensuales de Empleo se cargan acá,
+    **una sola vez**, cuando alguna métrica del informe los necesita (las
+    del bloque Empleo o las del índice territorial). Hasta la v0.13.6 cada
+    consumidor se los cargaba por su cuenta: en un informe con las 42
+    métricas, `load_empleo` corría cinco veces (una en la preparación del
+    bloque Empleo, una por cada una de las tres métricas del índice
+    territorial y otra en la comparación) — medido en la bitácora real,
+    63 cargas territoriales en 25 corridas.
     """
     # El párrafo de "ponderado" estaba acá y era lo primero que veía el
     # lector del informe. Es metodología, no apertura: se mudó a
@@ -155,6 +164,12 @@ with bitacora.medir("carga_de_datos"):
 
 print(f"Hogares en todo el país: {{len(hogares):,}}")
 print(f"Hogares de Montevideo: {{len(hogares_mdeo):,}}")'''
+    if incluir_empleo:
+        codigo += '''
+
+with bitacora.medir("carga_de_datos_empleo"):
+    empleo_prep = preprocessing.prepare_empleo(data_loader.load_empleo(ANIO))
+print(f"Registros de Empleo (12 meses): {len(empleo_prep):,}")'''
     return Celda(markdown=markdown, codigo=codigo)
 
 
@@ -162,11 +177,11 @@ def celda_preparacion_empleo(anio_base: int) -> Celda:
     """Solo se genera si se eligió el bloque Empleo — procesar los 12
     meses es bastante más pesado que el resto (ver paso 3.5 del agente),
     por eso queda en su propia celda, separada de Preparación de datos."""
-    codigo = '''with bitacora.medir("carga_de_datos_empleo"):
-    empleo_prep = preprocessing.prepare_empleo(data_loader.load_empleo(ANIO))
-    ocupados = empleo_prep[empleo_prep["condicion_actividad"] == "Ocupados"].copy()
-    activos = empleo_prep[empleo_prep["condicion_actividad"].isin(["Ocupados", "Desocupados"])].copy()
-    activos["es_desocupado"] = activos["condicion_actividad"] == "Desocupados"
+    # `empleo_prep` ya lo cargó la preparación general (una sola vez para
+    # todo el informe): acá solo se derivan las vistas que usan las métricas.
+    codigo = '''ocupados = empleo_prep[empleo_prep["condicion_actividad"] == "Ocupados"].copy()
+activos = empleo_prep[empleo_prep["condicion_actividad"].isin(["Ocupados", "Desocupados"])].copy()
+activos["es_desocupado"] = activos["condicion_actividad"] == "Desocupados"
 
 meses_cubiertos = sorted(int(m) for m in empleo_prep["mes"].unique())
 print(f"Meses de Empleo cubiertos: {len(meses_cubiertos)}")'''
@@ -784,18 +799,18 @@ def _m12() -> Celda:
 # indice COMPLETAMENTE VACIO en silencio, sin ningun error. Es exactamente
 # el modo de falla que documenta `preprocessing.normalizar_departamento`.
 #
-# El empleo se carga aca aunque el usuario no haya elegido el bloque
-# Empleo: el indice lo necesita igual. Se carga por separado (y no se
-# reusa `empleo_prep`, que solo existe si se eligio ese bloque) para que
-# esta celda funcione sola, sin depender de que otra la haya preparado.
+# `empleo_prep` lo carga la preparación general del informe cuando alguna
+# métrica del índice está elegida (ver `celda_preparacion_datos`), así que
+# acá no se vuelve a leer ningún archivo. Y este código corre UNA vez, en
+# la apertura del bloque Territorio (`celda_preparacion_territorio`), no
+# repetido dentro de cada una de las métricas 13, 14 y 15 como hasta la
+# v0.13.6 — eso triplicaba la carga de los 12 archivos de Empleo y el
+# cálculo del índice en el mismo informe.
 _COMPONENTES_TERRITORIO = (
     'pobreza_depto = analysis.pct_pobres_por(hogares_cond, "departamento").set_index("departamento")\n'
     'estrato_depto = analysis.estrato_promedio_por(hogares, "departamento").set_index("departamento")\n'
     'precariedad_depto = analysis.precariedad_estructural_por(hogares_cond, "departamento").set_index("departamento")\n'
-    'with bitacora.medir("carga_de_datos_empleo_territorial"):\n'
-    "    empleo_territorial = preprocessing.normalizar_departamento(\n"
-    "        preprocessing.prepare_empleo(data_loader.load_empleo(ANIO))\n"
-    "    )\n"
+    "empleo_territorial = preprocessing.normalizar_departamento(empleo_prep)\n"
     'empleo_depto = analysis.tasas_actividad_empleo_desempleo_por(empleo_territorial, "departamento").set_index("departamento")\n'
     "componentes_territorio = pd.DataFrame({\n"
     '    "Pobreza": pobreza_depto["pct_pobres"],\n'
@@ -813,19 +828,24 @@ _COMPONENTES_TERRITORIO = (
 )
 
 
+def celda_preparacion_territorio() -> Celda:
+    """Abre el bloque Territorio: calcula los cuatro componentes y el
+    índice una sola vez; las métricas 13, 14 y 15 solo lo grafican."""
+    return Celda(markdown="### Preparación de los datos de este tema", codigo=_COMPONENTES_TERRITORIO)
+
+
 def _m13() -> Celda:
-    codigo = _COMPONENTES_TERRITORIO + "\nfig = viz.plot_indice_desarrollo_territorial(indice_territorial)\nfig.show()"
+    codigo = "fig = viz.plot_indice_desarrollo_territorial(indice_territorial)\nfig.show()"
     return Celda(_markdown(13), codigo, _markdown_justificacion("barras_h"))
 
 
 def _m14() -> Celda:
-    codigo = _COMPONENTES_TERRITORIO + "\nfig = viz.plot_perfil_territorial(indice_territorial)"
+    codigo = "fig = viz.plot_perfil_territorial(indice_territorial)"
     return Celda(_markdown(14), codigo, _markdown_justificacion("heatmap"))
 
 
 def _m15() -> Celda:
     codigo = (
-        _COMPONENTES_TERRITORIO + "\n"
         'mejor_depto = indice_territorial.index[0]\n'
         'peor_depto = indice_territorial.index[-1]\n'
         'brecha_territorial = indice_territorial.loc[mejor_depto, "indice"] - indice_territorial.loc[peor_depto, "indice"]\n'
@@ -1337,19 +1357,25 @@ def construir_celdas_notebook(
         if any(_bloque_de(n) == bloque for n in elegidas)
     ]
 
+    # Los 12 archivos de Empleo se cargan una sola vez, en la preparación
+    # general, si alguna métrica elegida los usa: las del bloque Empleo o
+    # las del índice territorial (13-15). Ninguna otra celda vuelve a leerlos.
+    necesita_empleo = "empleo" in bloques_presentes or "territorio" in bloques_presentes
     celdas = [celda_introduccion(anio_base, elegidas, bloques_presentes)]
-    celdas.append(celda_preparacion_datos(anio_base, incluir_fies))
+    celdas.append(celda_preparacion_datos(anio_base, incluir_fies, incluir_empleo=necesita_empleo))
 
-    # La preparación de Empleo y la de Seguridad abren su propio tema, no el
-    # informe: dejarlas arriba ponía un "## Empleo: preparación específica de
-    # este bloque" entre la preparación general y el primer tema, lejos del
-    # "## Empleo" que le corresponde. Se puede porque ninguna métrica de otro
-    # bloque usa lo que definen (el índice territorial también mira empleo,
-    # pero se lo carga por su cuenta).
+    # La preparación de Empleo, la de Seguridad y la del índice territorial
+    # abren su propio tema, no el informe: dejarlas arriba ponía un "## Empleo:
+    # preparación específica de este bloque" entre la preparación general y el
+    # primer tema, lejos del "## Empleo" que le corresponde. Lo que definen
+    # solo lo usan las métricas de su tema (el dato crudo compartido, el
+    # empleo, ya quedó cargado arriba).
     apertura_de_bloque = {}
-    if incluir_empleo:
+    if "empleo" in bloques_presentes:
         apertura_de_bloque["empleo"] = [celda_preparacion_empleo(anio_base)]
-    if incluir_seguridad:
+    if "territorio" in bloques_presentes:
+        apertura_de_bloque["territorio"] = [celda_preparacion_territorio()]
+    if "seguridad" in bloques_presentes:
         apertura_de_bloque["seguridad"] = [celda_preparacion_seguridad(anio_base)]
     if incluir_brecha_digital:
         # El panorama de conectividad es contexto de su tema, no de todos.
