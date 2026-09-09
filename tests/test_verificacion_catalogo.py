@@ -256,3 +256,22 @@ def test_bloques_disponibles_encaja_con_la_firma_de_plantilla_areas(tmp_path, mo
         f"bloques_disponibles() devuelve argumentos que plantilla_areas no acepta: "
         f"{sorted(argumentos - parametros)}"
     )
+
+
+def test_los_bloques_y_las_plantillas_salen_del_catalogo_y_del_manifiesto():
+    """Catálogo (plantillas.py), manifiesto (MANIFEST), bloques (BLOQUES) y
+    plantillas del informe (notebook_builder.GENERADORES) describen el
+    mismo conjunto de métricas. Antes los números vivían en tres lugares
+    escritos a mano (un rango por bloque, `range(1, 43)` en el
+    constructor); ahora se derivan del catálogo y este test lo ata."""
+    from encuesta_hogares import notebook_builder as nb
+    from encuesta_hogares import verificacion_catalogo as vc
+
+    numeros_catalogo = set(vc.numeros_del_catalogo())
+    en_bloques = [n for rango, _nombre in vc.BLOQUES.values() for n in rango]
+    assert sorted(en_bloques) == sorted(numeros_catalogo), "cada métrica del catálogo está en exactamente un bloque"
+    assert len(en_bloques) == len(set(en_bloques))
+    assert set(vc.MANIFEST) == numeros_catalogo
+    assert set(nb.GENERADORES) == numeros_catalogo
+    assert list(vc.BLOQUES) == ["brecha_digital", "hogares", "territorio", "vivienda", "fies", "empleo", "seguridad"]
+    assert vc.BLOQUES["territorio"] == (range(13, 16), "Territorio")

@@ -55,7 +55,7 @@ from typing import Callable
 import nbformat
 from nbformat.v4 import new_code_cell, new_markdown_cell, new_notebook
 
-from . import entrega, formularios
+from . import entrega, formularios, verificacion_catalogo
 
 
 @dataclass
@@ -466,7 +466,6 @@ def terminos_de_bloque(metricas_elegidas: list[int] | set[int]) -> dict[str, lis
     bloque se lee solo, sin tener que ir a buscar una definición a otra
     sección.
     """
-    from . import verificacion_catalogo
 
     elegidas = set(metricas_elegidas)
     resultado: dict[str, list[str]] = {}
@@ -484,7 +483,6 @@ def terminos_de_bloque(metricas_elegidas: list[int] | set[int]) -> dict[str, lis
 
 
 def _bloque_de(numero: int) -> str:
-    from . import verificacion_catalogo
 
     for bloque, (numeros, _nombre) in verificacion_catalogo.BLOQUES.items():
         if numero in numeros:
@@ -596,7 +594,6 @@ def celda_introduccion(anio_base: int, metricas: list[int], bloques: list[str]) 
     `celda_nota_metodologica()`, al final. Acá solo queda la advertencia de
     una línea, para que quien lea un porcentaje sepa dónde buscar el detalle.
     """
-    from . import verificacion_catalogo
 
     nombres = [verificacion_catalogo.BLOQUES[b][1] for b in bloques if b in verificacion_catalogo.BLOQUES]
     listado = "\n".join(f"- {nombre}" for nombre in nombres)
@@ -629,7 +626,6 @@ def celda_presentacion_bloque(bloque: str, terminos: list[str]) -> Celda:
     la persona eligió: acá van los que usa más de una métrica del bloque, y
     los que usa una sola se quedan en esa métrica.
     """
-    from . import verificacion_catalogo
 
     _numeros, nombre = verificacion_catalogo.BLOQUES[bloque]
     partes = [f"## {nombre}", _PRESENTACION_BLOQUE[bloque]]
@@ -1208,7 +1204,11 @@ def _m42() -> Celda:
 # Registro y orquestación
 # ============================================================================
 
-GENERADORES: dict[int, Callable[[], Celda]] = {n: globals()[f"_m{n}"] for n in range(1, 43)}
+# Una plantilla por métrica del manifiesto: el catálogo (plantillas.py),
+# el manifiesto (verificacion_catalogo.MANIFEST) y estas plantillas se
+# mantienen alineados por construcción y por test, no por un rango literal
+# escrito acá (hasta la v0.14.1 decía `range(1, 43)` a mano).
+GENERADORES: dict[int, Callable[[], Celda]] = {n: globals()[f"_m{n}"] for n in verificacion_catalogo.MANIFEST}
 
 
 def construir_celdas_metrica(numero: int, terminos_ya_explicados: set[str] | None = None) -> Celda:
@@ -1330,7 +1330,6 @@ def construir_celdas_notebook(
     agrega lo suyo sin rearmar la estructura por su cuenta, que es donde se
     perderían la introducción y la presentación de cada tema.
     """
-    from . import verificacion_catalogo
 
     elegidas = list(metricas)
     extra = celdas_extra or {}

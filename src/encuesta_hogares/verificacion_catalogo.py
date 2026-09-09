@@ -353,15 +353,42 @@ def aviso_metricas_no_disponibles(anio: int | str) -> list[str]:
 # ============================================================================
 
 # bloque -> (numeros de metrica, nombre visible en el formulario)
-BLOQUES: dict[str, tuple[range, str]] = {
-    "brecha_digital": (range(1, 7), "Brecha Digital"),
-    "hogares": (range(7, 13), "Hogares"),
-    "territorio": (range(13, 16), "Territorio"),
-    "vivienda": (range(16, 21), "Vivienda"),
-    "fies": (range(21, 28), "Seguridad alimentaria"),
-    "empleo": (range(28, 36), "Empleo"),
-    "seguridad": (range(36, 43), "Seguridad y victimización"),
+# Nombre visible de cada bloque (el de los encabezados del informe). Los
+# NÚMEROS de cada bloque no se escriben acá: salen del catálogo real de
+# plantillas.py, así agregar o quitar una métrica no exige actualizar un
+# rango literal (hasta la v0.14.1 vivían duplicados en tres lugares).
+_NOMBRES_DE_BLOQUE: dict[str, str] = {
+    "brecha_digital": "Brecha Digital",
+    "hogares": "Hogares",
+    "territorio": "Territorio",
+    "vivienda": "Vivienda",
+    "fies": "Seguridad alimentaria",
+    "empleo": "Empleo",
+    "seguridad": "Seguridad y victimización",
 }
+
+
+def _catalogo_por_bloque() -> dict[str, list[int]]:
+    """{clave de bloque: números de sus métricas}, en el orden del catálogo."""
+    fuentes = dict(formularios._CATEGORIAS_METRICAS)
+    fuentes["fies"] = formularios._CATEGORIA_FIES
+    fuentes["empleo"] = formularios._CATEGORIA_EMPLEO
+    fuentes["seguridad"] = formularios._CATEGORIA_SEGURIDAD
+    return {clave: sorted(n for n, _t, _d in metricas) for clave, (_titulo, _nota, metricas) in fuentes.items()}
+
+
+def _rangos_del_catalogo() -> dict[str, tuple[range, str]]:
+    bloques: dict[str, tuple[range, str]] = {}
+    for clave, numeros in _catalogo_por_bloque().items():
+        if numeros != list(range(numeros[0], numeros[-1] + 1)):
+            raise ValueError(f"las métricas del bloque {clave!r} no son contiguas en el catálogo: {numeros}")
+        if clave not in _NOMBRES_DE_BLOQUE:
+            raise ValueError(f"el bloque {clave!r} del catálogo no tiene nombre en _NOMBRES_DE_BLOQUE")
+        bloques[clave] = (range(numeros[0], numeros[-1] + 1), _NOMBRES_DE_BLOQUE[clave])
+    return bloques
+
+
+BLOQUES: dict[str, tuple[range, str]] = _rangos_del_catalogo()
 
 
 def metricas_no_disponibles_del_anio(anio: int | str) -> dict[int, str]:
