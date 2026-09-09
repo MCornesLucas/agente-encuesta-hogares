@@ -12,7 +12,9 @@
 // _lib_notebook_ejecutado.cjs. El pipeline `encuesta_hogares.generar_informe`
 // no pasa por acá: hace las mismas verificaciones en Python antes de
 // ejecutar (src/encuesta_hogares/verificacion_notebook.py).
+const path = require("path");
 const { resolverNotebookEjecutado } = require("./_lib_notebook_ejecutado.cjs");
+const { registrar } = require("./_lib_bitacora.cjs");
 
 const VERIFICACIONES = [
   require("./_lib_check_notebook_sin_duplicados.cjs"),
@@ -35,10 +37,19 @@ process.stdin.on("end", () => {
   const resultado = resolverNotebookEjecutado(comando);
   if (!resultado) process.exit(0);
 
+  // Cada verificación que bloquea deja su propia constancia en la bitácora
+  // (con el mismo nombre de hook de siempre), así un bloqueo nunca es
+  // invisible al diagnosticar una corrida.
   const razones = [];
   for (const verificacion of VERIFICACIONES) {
-    const razon = verificacion.evaluar(resultado.ruta, resultado.nb);
-    if (razon !== null) razones.push(razon);
+    const violaciones = verificacion.verificar(resultado.nb);
+    if (violaciones.length === 0) continue;
+    registrar("hook_bloqueo", {
+      hook: verificacion.NOMBRE,
+      violaciones: violaciones.length,
+      notebook: path.basename(resultado.ruta),
+    });
+    razones.push(verificacion.motivo(resultado.ruta, violaciones));
   }
   if (razones.length === 0) process.exit(0);
 
