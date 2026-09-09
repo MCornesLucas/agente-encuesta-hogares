@@ -383,3 +383,34 @@ def test_melt_delitos_arma_formato_largo_con_subpreguntas_correctas():
     fila_v6 = largo[largo["tipo_delito"] == "Estafa"].iloc[0]
     # v6 (estafa) no tiene sub-pregunta de violencia en el cuestionario
     assert not fila_v6["violencia"]
+
+
+def test_clasificar_tipo_hogar_coincide_con_la_taxonomia_de_referencia_en_hogares_al_azar():
+    """La clasificación vectorizada (una pasada de groupby().any()) tiene
+    que dar exactamente lo mismo que `_clasificar_tipo_hogar_codigos`,
+    la definición legible de la taxonomía CELADE, hogar por hogar. Se
+    prueba sobre mil hogares generados al azar con códigos de todo el
+    rango (incluidos NaN y códigos fuera de todo conjunto), no solo sobre
+    los seis casos de ejemplo — el cambio a vectorizado ahorró más de
+    cinco segundos por corrida y este test es lo que impide que ese
+    ahorro cambie un resultado en silencio."""
+    import numpy as np
+    from encuesta_hogares.preprocessing import _clasificar_tipo_hogar_codigos
+
+    rng = np.random.default_rng(20260909)
+    filas = []
+    for id_hogar in range(1, 1001):
+        n = int(rng.integers(1, 7))
+        codigos = [1] + [int(c) for c in rng.choice([2, 3, 4, 5, 6, 8, 9, 12, 13, 14, 0, 99], size=n - 1)]
+        for c in codigos:
+            filas.append({"id_hogar": id_hogar, "parentesco_jefe": float(c) if rng.random() > 0.05 else np.nan,
+                          "sexo": 1, "edad": 40})
+    personas = pd.DataFrame(filas)
+    hogares = pd.DataFrame({"id_hogar": range(1, 1001), "ponderador_hogar": 1.0})
+
+    resultado = clasificar_tipo_hogar(personas, hogares).set_index("id_hogar")
+    for id_hogar, grupo in personas.groupby("id_hogar")["parentesco_jefe"]:
+        codigos = set(grupo.dropna().astype(int)) - {1}
+        assert resultado.loc[id_hogar, "tipo_hogar"] == _clasificar_tipo_hogar_codigos(codigos), id_hogar
+        esperado_mono = bool((grupo.isin([3, 4, 5])).any() and not (grupo == 2).any())
+        assert bool(resultado.loc[id_hogar, "monoparental"]) is esperado_mono, id_hogar

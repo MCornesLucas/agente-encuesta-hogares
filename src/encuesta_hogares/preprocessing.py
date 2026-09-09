@@ -258,17 +258,32 @@ def clasificar_tipo_hogar(personas: pd.DataFrame, hogares: pd.DataFrame) -> pd.D
     No depende de ninguna variable de tecnología — es composición del hogar
     pura, según la taxonomía estándar que usa CEPAL/CELADE en toda la región.
     """
-    por_hogar = personas.groupby("id_hogar")["parentesco_jefe"].apply(
-        lambda s: _clasificar_tipo_hogar_codigos(set(s.dropna().astype(int)) - {1})
-    )
-    resultado = por_hogar.rename("tipo_hogar").reset_index()
+    # Vectorizado: una sola pasada de `groupby(...).any()` sobre seis
+    # indicadores booleanos por persona, en vez de tres `groupby().apply`
+    # con lambdas de Python fila a fila (5,7 s sobre las 55.000 personas de
+    # 2025; ahora décimas de segundo — medido 2026-09-09). La taxonomía es
+    # exactamente la de `_clasificar_tipo_hogar_codigos`, que se conserva
+    # como definición legible y como oráculo en los tests.
+    parentesco = personas["parentesco_jefe"]
+    indicadores = pd.DataFrame({
+        "id_hogar": personas["id_hogar"],
+        "_otro": parentesco.notna() & (parentesco != 1),
+        "_no_pariente": parentesco.isin(config.PARENTESCO_CODIGOS_NO_PARIENTE),
+        "_nucleo": parentesco.isin(config.PARENTESCO_CODIGOS_NUCLEO),
+        "_extenso": parentesco.isin(config.PARENTESCO_CODIGOS_EXTENSO),
+        "_tiene_conyuge": parentesco == 2,
+        "_tiene_hijos": parentesco.isin([3, 4, 5]),
+    }).groupby("id_hogar").any()
 
-    tiene_conyuge = personas.groupby("id_hogar")["parentesco_jefe"].apply(lambda s: (s == 2).any())
-    tiene_hijos = personas.groupby("id_hogar")["parentesco_jefe"].apply(lambda s: s.isin([3, 4, 5]).any())
-    resultado = resultado.merge(tiene_conyuge.rename("_tiene_conyuge"), on="id_hogar")
-    resultado = resultado.merge(tiene_hijos.rename("_tiene_hijos"), on="id_hogar")
-    resultado["monoparental"] = resultado["_tiene_hijos"] & ~resultado["_tiene_conyuge"]
-    resultado = resultado.drop(columns=["_tiene_conyuge", "_tiene_hijos"])
+    tipo = pd.Series("Sin núcleo", index=indicadores.index, dtype=object)
+    tipo[indicadores["_nucleo"]] = "Nuclear"
+    tipo[indicadores["_nucleo"] & indicadores["_extenso"]] = "Extendido"
+    tipo[indicadores["_no_pariente"]] = "Compuesto"
+    tipo[~indicadores["_otro"]] = "Unipersonal"
+
+    resultado = indicadores.reset_index()[["id_hogar"]]
+    resultado["tipo_hogar"] = tipo.to_numpy()
+    resultado["monoparental"] = (indicadores["_tiene_hijos"] & ~indicadores["_tiene_conyuge"]).to_numpy()
 
     jefes = personas.loc[personas["parentesco_jefe"] == 1, ["id_hogar", "sexo", "edad"]].copy()
     jefes["jefe_sexo"] = classify_sexo(jefes["sexo"])

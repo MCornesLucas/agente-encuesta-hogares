@@ -85,7 +85,12 @@ def load_hogares(path: Path) -> pd.DataFrame:
     viejo en silencio, sin ningún error. El año lo elige siempre quien
     llama: `data/{año}/H_*.sav`.
     """
-    df, _meta = pyreadstat.read_sav(str(path))
+    # `usecols`: el .sav de Personas de 2019 pesa 76 MB y trae cientos de
+    # columnas; leerlo entero para quedarse con siete tardaba 7,8 s contra
+    # 0,6 s pidiéndole a pyreadstat solo las necesarias (medido 2026-09-09).
+    # Si falta una columna, pyreadstat falla con su nombre — mismo
+    # comportamiento que tenía el `.loc` de antes, ahora sin leer de más.
+    df, _meta = pyreadstat.read_sav(str(path), usecols=list(config.HOGARES_COLUMNS))
     df = df.loc[:, list(config.HOGARES_COLUMNS)].rename(columns=config.HOGARES_COLUMNS)
     df["barrio"] = df["barrio"].map(fix_mojibake)
     return df
@@ -95,7 +100,7 @@ def load_personas(path: Path) -> pd.DataFrame:
     """Carga la base de Personas (.sav) y devuelve solo las columnas
     necesarias, renombradas. `path` obligatorio — mismo motivo que
     `load_hogares`."""
-    df, _meta = pyreadstat.read_sav(str(path))
+    df, _meta = pyreadstat.read_sav(str(path), usecols=list(config.PERSONAS_COLUMNS))
     df = df.loc[:, list(config.PERSONAS_COLUMNS)].rename(columns=config.PERSONAS_COLUMNS)
     return df
 
@@ -140,11 +145,14 @@ def load_hogares_personas_csv(anio: int | str) -> tuple[pd.DataFrame, pd.DataFra
     # resolver.
     destinos_hogar = [config.HOGARES_COLUMNS_CSV[c] for c in columnas_hogar]
     duplicados = {d for d in destinos_hogar if destinos_hogar.count(d) > 1}
-    assert not duplicados, (
-        f"El archivo de {anio} trae más de una columna de origen para el "
-        f"mismo destino en Hogares ({duplicados}) — hay que decidir a mano "
-        f"cuál usar, no elegir en silencio."
-    )
+    if duplicados:
+        # Excepción y no `assert`: un assert desaparece con `python -O` y
+        # esta red de seguridad tiene que existir también en producción.
+        raise ValueError(
+            f"El archivo de {anio} trae más de una columna de origen para el "
+            f"mismo destino en Hogares ({duplicados}) — hay que decidir a mano "
+            f"cuál usar, no elegir en silencio."
+        )
 
     # encoding="latin1": el CSV combinado no viene en UTF-8 (ver
     # fix_doble_codificacion más arriba para el detalle de un caso mixto).

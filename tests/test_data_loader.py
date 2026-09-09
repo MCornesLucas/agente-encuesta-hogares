@@ -232,7 +232,7 @@ def test_load_hogares_personas_csv_corta_si_hay_una_colision_no_contemplada(tmp_
     columnas = ["ID", "nper", "POBPCOAC", "ESTRED13", "OTRA_COLUMNA_ESTRATO"]
     (carpeta / "ECH_2033.csv").write_text(",".join(columnas) + "\n1,1,2,1,3\n")
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         load_hogares_personas_csv(2033)
 
 
