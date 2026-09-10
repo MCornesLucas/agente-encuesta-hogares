@@ -278,6 +278,7 @@ def test_ningun_titulo_literal_excede_el_ancho_verificado_de_la_figura():
     import inspect
     import re
 
+    assert viz.LARGO_MAXIMO_TITULO == LARGO_MAXIMO_TITULO_VERIFICADO
     fuente = inspect.getsource(viz)
     patron = re.compile(r'\btitle\s*=\s*f?"([^"\n]*)"')
     largos = sorted(t for t in set(patron.findall(fuente)) if len(t) > LARGO_MAXIMO_TITULO_VERIFICADO)
@@ -285,3 +286,90 @@ def test_ningun_titulo_literal_excede_el_ancho_verificado_de_la_figura():
         f"títulos más largos que los {LARGO_MAXIMO_TITULO_VERIFICADO} caracteres verificados "
         f"en figuras de 800px (van a salir cortados del informe): {largos} — acortar el título"
     )
+
+
+# ============================================================================
+# Guardianes de clase nacidos de la revisión del PDF real de 2024 (ver la
+# nota «Convenciones comunes» al inicio de visualization.py): cifras con el
+# formato del informe, color solo cuando significa algo, departamentos
+# legibles y horizontales, grupos con pocos casos en gris.
+# ============================================================================
+
+def _funciones_plot():
+    import ast
+    import inspect
+
+    fuente = inspect.getsource(viz)
+    for nodo in ast.walk(ast.parse(fuente)):
+        if isinstance(nodo, ast.FunctionDef) and nodo.name.startswith("plot_"):
+            yield nodo.name, (ast.get_source_segment(fuente, nodo) or "")
+
+
+def test_toda_grafica_de_plotly_sale_con_coma_decimal():
+    """Cinco gráficas del PDF real mostraban «89.99», «12.99», «61.05» y el
+    resto «65.2%»; el texto del informe dice «65,2%»."""
+    sin_formato = [
+        nombre for nombre, cuerpo in _funciones_plot()
+        if ("px." in cuerpo or "go.Figure" in cuerpo) and "return _formato_local(fig)" not in cuerpo
+    ]
+    assert sin_formato == [], f"gráficas que no pasan por _formato_local: {sin_formato}"
+    df = pd.DataFrame({"tipo_hogar": ["Nuclear", "Unipersonal"], "pct_hogares": [65.25, 18.8]})
+    fig = viz.plot_tipos_hogar(df)
+    assert fig.layout.separators == ",."
+    assert fig.data[0].texttemplate == "%{text:.1f}%"
+    fig = viz.plot_pct_pobres_indigentes({"pct_pobres": 12.99, "pct_indigentes": 1.41})
+    assert fig.data[0].texttemplate == "%{text:.1f}%"
+
+
+def test_ninguna_etiqueta_de_barra_se_formatea_a_mano():
+    """Una etiqueta armada con f-string («f"{v:.1f}%"») no pasa por el
+    separador decimal de Plotly: siempre `texttemplate`."""
+    a_mano = [nombre for nombre, cuerpo in _funciones_plot() if 'text=[f"' in cuerpo or "text=[f'" in cuerpo]
+    assert a_mano == [], f"etiquetas formateadas a mano (usar text=<columna> + texttemplate): {a_mano}"
+
+
+def test_una_barra_por_categoria_lleva_un_solo_color():
+    """Ocho gráficas del PDF real pintaban cada barra de un color distinto
+    sin que el color significara nada. Regla: sin leyenda, sin `color=`;
+    la excepción es un mapa explícito de colores con significado."""
+    import re
+
+    decorativas = []
+    for nombre, cuerpo in _funciones_plot():
+        sin_leyenda = "showlegend=False" in cuerpo
+        # `color=<columna o lista>` pinta por categoría; `color="#..."` es un
+        # color fijo (los marcadores del dumbbell) y no cuenta.
+        color_por_categoria = re.search(r"\bcolor=(?!_discrete|\")", cuerpo) is not None
+        if sin_leyenda and color_por_categoria and "color_discrete_map" not in cuerpo:
+            decorativas.append(nombre)
+    assert decorativas == [], f"color por categoría sin significado: {decorativas}"
+
+
+def test_los_departamentos_se_leen_como_se_escriben_en_toda_grafica():
+    df = pd.DataFrame({"departamento": ["TREINTA Y TRES", "RÍO NEGRO", "MONTEVIDEO"], "razon_dependencia": [56.5, 61.2, 50.6]})
+    fig = viz.plot_razon_dependencia_por(df, "departamento")
+    assert list(fig.data[0].y) == ["Treinta y Tres", "Río Negro", "Montevideo"]
+    df = pd.DataFrame({"departamento": ["TREINTA Y TRES", "SALTO"], "pct_precariedad": [50.2, 56.4]})
+    assert list(viz.plot_precariedad_estructural_por(df, "departamento").data[0].y) == ["Treinta y Tres", "Salto"]
+    resultado = pd.DataFrame({"pct_pobreza": [1.0, 0.0], "indice": [0.5, 0.5]}, index=pd.Index(["SAN JOSÉ", "SALTO"], name="departamento"))
+    assert list(viz.plot_indice_desarrollo_territorial(resultado).data[0].y) == ["San José", "Salto"]
+    fig = viz.plot_dumbbell(["Índice"], [0.83], [0.24], nombre_a="COLONIA", nombre_b="ARTIGAS", titulo="Brecha")
+    assert [t.name for t in fig.data[1:]] == ["Colonia", "Artigas"]
+
+
+def test_plot_pct_por_por_departamento_es_horizontal_ordenada_y_marca_los_poco_confiables():
+    """Del PDF real de 2024: la victimización por departamento era la única
+    gráfica por departamento vertical y sin ordenar, y mostraba «0,0%
+    (Cerro Largo)» sobre 0 víctimas como un dato más."""
+    df = pd.DataFrame({"departamento": ["Cerro Largo", "Montevideo", "Treinta y Tres"], "pct": [0.0, 3.2, 7.7]})
+    fig = viz.plot_pct_por(df, "departamento", titulo="Victimización por departamento", xlabel="Departamento",
+                           poco_confiables=["Cerro Largo", "Treinta y Tres"])
+    assert fig.data[0].orientation == "h"
+    assert fig.layout.yaxis.categoryorder == "total ascending"
+    assert fig.layout.xaxis.range[0] == 0
+    assert list(fig.data[0].marker.color) == [viz.COLOR_POCO_CONFIABLE, viz.COLOR_BASE, viz.COLOR_POCO_CONFIABLE]
+    # Con pocas categorías sigue siendo vertical y de un solo color.
+    df = pd.DataFrame({"sexo_grupo": ["1-Hombre", "2-Mujer"], "pct": [1.9, 2.8]})
+    fig = viz.plot_pct_por(df, "sexo_grupo", titulo="Victimización por sexo", xlabel="Sexo")
+    assert fig.data[0].orientation == "v"
+    assert list(fig.data[0].marker.color) == [viz.COLOR_BASE, viz.COLOR_BASE]

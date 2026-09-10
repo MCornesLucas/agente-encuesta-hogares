@@ -37,6 +37,33 @@ Un solo número o una diferencia entre dos grupos siguen necesitando su
 gráfica (ver la entrada de "dumbbell chart" más abajo) y su fundamento,
 igual que cualquier otra.
 
+## Formato y color, iguales en todo el informe
+
+Reglas mecánicas que aplica `visualization.py` a toda gráfica (nacieron de
+la revisión del PDF real de 2024; los guardianes de clase de
+`tests/test_visualization.py` las hacen cumplir):
+
+- **Cifras con el formato del texto**: coma decimal y punto de miles
+  (`resumen.fmt` en la prosa, `layout.separators` en Plotly), un decimal y
+  el símbolo `%` en toda barra de porcentaje, siempre vía `texttemplate` y
+  nunca con etiquetas armadas a mano en un f-string (esas no pasan por el
+  separador). Cinco gráficas decían «89.99» o «61.05» mientras el resumen
+  decía «65,2%».
+- **Un solo color por gráfica** salvo que el color signifique algo: una
+  leyenda con varias series, o un mapa explícito con significado (la
+  inseguridad alimentaria severa en rojo). Ocho gráficas pintaban cada
+  barra de un color distinto sin que significara nada. Fundamento: Tufte,
+  data-ink ratio (misma entrada de abajo).
+- **Departamentos siempre en barras horizontales ordenadas y con el nombre
+  como se escribe** («Treinta y Tres», no «TREINTA Y TRES»), sea cual sea
+  el archivo del INE del que vengan (`resumen.nombre_propio`).
+- **Un grupo con pocos casos se ve en gris** (`COLOR_POCO_CONFIABLE`) y la
+  celda lo explica en una nota; no desaparece ni se lee como un dato más
+  (ver `METODOLOGIA.md`, sección 2, «Celdas chicas»).
+- **Títulos de hasta 65 caracteres** en las figuras de 800 px, también en
+  las celdas a medida (`generar_informe._validar_celdas_a_medida` lo
+  comprueba antes de ejecutar).
+
 ## Guía de referencia, con la fuente de cada patrón
 
 - **Barras horizontales** (en vez de verticales): cuando las categorías

@@ -64,23 +64,67 @@ def extremos(tabla: pd.DataFrame, columna_categoria: str, columna_valor: str) ->
     return str(fila_max[columna_categoria]), float(fila_max[columna_valor]), str(fila_min[columna_categoria]), float(fila_min[columna_valor])
 
 
+_CONECTORES = {"y", "de", "del", "la", "las", "los", "e"}
+
+
+def nombre_propio(texto) -> str:
+    """Un nombre en mayúsculas sostenidas, como lo traen los archivos de
+    Hogares del INE, escrito como se lee: «TREINTA Y TRES» → «Treinta y
+    Tres», «RÍO NEGRO» → «Río Negro». Lo que no está en mayúsculas
+    sostenidas se devuelve tal cual (los archivos de Empleo ya traen
+    «Treinta y Tres»)."""
+    texto = str(texto).strip()
+    if not texto.isupper():
+        return texto
+    palabras = [p.capitalize() for p in texto.lower().split(" ")]
+    return " ".join(p.lower() if i and p.lower() in _CONECTORES else p for i, p in enumerate(palabras))
+
+
 def etiqueta(categoria) -> str:
     """Etiqueta legible de una categoría: sin el prefijo de orden que traen
     las del INE («1-Bajo» → «bajo», «4. Terciario completo» → «terciario
-    completo») y sin mayúsculas sostenidas («TACUAREMBÓ» → «Tacuarembó»)."""
+    completo») y sin mayúsculas sostenidas («TACUAREMBÓ» → «Tacuarembó»,
+    «TREINTA Y TRES» → «Treinta y Tres»)."""
     texto = str(categoria).strip()
     texto = re.sub(r"^\d+\s*[-.]\s*", "", texto)
     if texto.isupper():
-        texto = texto.title()
+        texto = nombre_propio(texto)
     elif texto[:1].isupper() and " " in texto and not any(ch.isupper() for ch in texto[1:].replace("(", " ")):
         texto = texto[0].lower() + texto[1:]
     return texto
 
 
+def _entre_parentesis(categoria) -> str:
+    """La etiqueta lista para ir entre paréntesis: si ya trae un paréntesis
+    («generación silenciosa (hasta 1945)») se convierte en una coma, para
+    no anidar paréntesis en la frase."""
+    return re.sub(r"\s*\((.*?)\)", r", \1", etiqueta(categoria))
+
+
 def brecha(tabla: pd.DataFrame, columna_categoria: str, columna_valor: str, sujeto: str, unidad: str = "%") -> str:
     """«<sujeto> va de <mín> (<cat>) a <máx> (<cat>)» con los extremos de la tabla."""
     cat_max, v_max, cat_min, v_min = extremos(tabla, columna_categoria, columna_valor)
-    return f"{sujeto} va de {fmt(v_min)}{unidad} ({etiqueta(cat_min)}) a {fmt(v_max)}{unidad} ({etiqueta(cat_max)})"
+    return f"{sujeto} va de {fmt(v_min)}{unidad} ({_entre_parentesis(cat_min)}) a {fmt(v_max)}{unidad} ({_entre_parentesis(cat_max)})"
+
+
+def en_cuantos(parte: int, total: int, sustantivo: str) -> str:
+    """«En 3 de los 5 tipos de delito» — o «En los 5 tipos de delito» cuando
+    son todos, y «En ninguno de los 5 tipos de delito» cuando ninguno."""
+    if parte == total:
+        return f"En los {total} {sustantivo}"
+    if parte == 0:
+        return f"En ninguno de los {total} {sustantivo}"
+    return f"En {parte} de los {total} {sustantivo}"
+
+
+_SECTORES = {"hogares": "hogares (servicio doméstico)"}
+
+
+def nombre_sector(sector) -> str:
+    """El sector de la unidad económica (formal, informal, hogares) tal como
+    se nombra en el resumen: «hogares» solo, sin explicar, no se entiende."""
+    nombre = etiqueta(sector).lower()
+    return _SECTORES.get(nombre, nombre)
 
 
 def nombre_mes(mes) -> str:

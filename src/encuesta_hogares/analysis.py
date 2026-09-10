@@ -546,6 +546,25 @@ def grupos_con_muestra_chica(df: pd.DataFrame, columna_grupo: str, n_minimo: int
     return conteo[conteo < n_minimo].sort_values()
 
 
+def grupos_con_pocos_casos(df: pd.DataFrame, columna_grupo: str, columna_positivo: str, n_minimo: int = 30) -> pd.Series:
+    """Como `grupos_con_muestra_chica`, pero contando los CASOS POSITIVOS de
+    la muestra por grupo (filas donde `columna_positivo` es verdadera), no
+    el tamaño del grupo. Devuelve los grupos con menos de `n_minimo` casos.
+
+    Es la regla que corresponde a un evento raro: la precisión de un
+    porcentaje chico depende de cuántos casos lo sostienen, no de cuánta
+    gente se encuestó. En la corrida real de 2024, la victimización por
+    departamento tenía 694 personas en Cerro Largo y 0 víctimas, y 229 en
+    Flores con 3 víctimas: `grupos_con_muestra_chica` no marcaba ninguno
+    (todos superan las 30 personas) y el informe afirmaba que la
+    victimización «va de 0,0% (Cerro Largo) a 7,7% (Treinta y Tres)» sobre
+    un puñado de casos. Ver docs/METODOLOGIA.md, sección 2 (celdas chicas).
+    """
+    positivos = df.loc[df[columna_positivo].astype(bool), columna_grupo].value_counts()
+    conteo = positivos.reindex(df[columna_grupo].unique(), fill_value=0)
+    return conteo[conteo < n_minimo].sort_values()
+
+
 def diferencia_entre_tablas(
     tabla_a: pd.DataFrame, tabla_b: pd.DataFrame, columna_indice: str, columna_valor: str
 ) -> pd.Series:

@@ -72,6 +72,10 @@ ALLOWLIST: dict[str, str] = {
         "value_counts() es DELIBERADAMENTE sin ponderar — cuenta el tamaño de "
         "muestra real, no la población representada (ver docstring)."
     ),
+    "grupos_con_pocos_casos": (
+        "mismo caso: value_counts() cuenta los casos positivos reales de la "
+        "muestra por grupo, que es lo que sostiene la precisión de un evento raro."
+    ),
     "indice_desarrollo_territorial": (
         "mean() promedia columnas de un índice YA normalizado (0-1), no datos "
         "crudos de hogares/personas."

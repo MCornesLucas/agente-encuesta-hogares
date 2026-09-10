@@ -102,6 +102,14 @@ sección nueva, revisarla contra esta lista:
   `analysis.grupos_con_muestra_chica(df, columna_grupo)` sobre el
   dataframe sin agrupar — si devuelve algún grupo, aclarar en el texto que
   esa estimación puntual tiene poca base muestral (umbral: n=30).
+  Para un **evento raro** (victimización, indigencia: porcentajes de un
+  dígito) el tamaño del grupo no alcanza: lo que sostiene la precisión es
+  la cantidad de casos positivos. Ahí corresponde
+  `analysis.grupos_con_pocos_casos(df, columna_grupo, columna_positivo)`
+  (mismo umbral de 30, aplicado a los casos): los grupos que aparecen se
+  marcan en la gráfica y quedan fuera de cualquier comparación de extremos
+  en el resumen. Caso real (2024): victimización por departamento, con 694
+  personas y 0 víctimas en Cerro Largo — el informe decía «va de 0,0%».
 - **Ponderación por muestreo — no negociable, no es "un detalle técnico".**
   Toda estadística de Hogares/Personas (pobreza, hacinamiento, tipos de
   hogar, jefatura, razón de dependencia, vivienda, territorio, brecha

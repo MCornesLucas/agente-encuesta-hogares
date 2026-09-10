@@ -673,3 +673,87 @@ def test_toda_descripcion_del_catalogo_es_una_pregunta():
         if not (descripcion.strip().startswith("¿") and "?" in descripcion)
     ]
     assert afirmativas == [], afirmativas
+
+
+# ============================================================================
+# El estrato socioeconómico del INE existe solo para Montevideo. Caso real
+# (corrida 2024): la métrica 17 se calculaba sobre `hogares_cond` (todo el
+# país) y mostraba una barra «6-No Definido» con el 43,7% de precariedad,
+# que eran los 14.416 hogares del interior; el resumen decía «55,7% de los
+# hogares del nivel económico bajo» sin acotar a Montevideo.
+# ============================================================================
+
+_MARCOS_DE_MONTEVIDEO = ("hogares_mdeo", "hogares_ext", "hogares_ext_con_jefe", "hogares_jefe_mayor",
+                         "hogares_mdeo_hacinamiento", "hogares_cond_mdeo")
+
+
+def test_todo_corte_por_nivel_economico_se_calcula_sobre_hogares_de_montevideo():
+    import re
+
+    fuera = []
+    for numero in sorted(nb.GENERADORES):
+        codigo = nb.construir_celdas_metrica(numero).codigo
+        # Solo las funciones «_por»: reciben el marco de hogares sin agrupar y
+        # el criterio; las que reciben una tabla ya agregada (diferencia entre
+        # categorías) no eligen población.
+        for marco in re.findall(r"analysis\.\w+_por\(\s*(\w+),\s*\"nivel_economico\"", codigo):
+            if marco not in _MARCOS_DE_MONTEVIDEO:
+                fuera.append(f"{numero}: agrupa {marco} por nivel económico")
+    assert fuera == [], (
+        "El estrato del INE solo existe para Montevideo; en el interior todo hogar queda "
+        "«6-No Definido» y aparece como una barra más:\n" + "\n".join(fuera)
+    )
+    assert "hogares_cond_mdeo = hogares_cond.loc[" in nb.celda_preparacion_datos(2025, incluir_fies=False).codigo
+
+
+def test_las_metricas_por_nivel_economico_de_vivienda_dicen_montevideo():
+    for numero in (17, 19):
+        titulo, descripcion = nb._TEXTO_CATALOGO[numero]
+        assert "Montevideo" in descripcion, (numero, descripcion)
+        assert "Montevideo" in nb._RESUMEN_POR_METRICA[numero], numero
+    assert "Montevideo" in nb._GLOSARIO["nivel_economico"]
+
+
+# ============================================================================
+# Victimización es un evento raro: lo que sostiene cada porcentaje son los
+# casos, no las personas encuestadas. Caso real (2024): 17 de 19
+# departamentos con menos de 30 víctimas (Cerro Largo: 0 sobre 694) y el
+# resumen decía «va de 0,0% (Cerro Largo) a 7,7% (Treinta y Tres)».
+# ============================================================================
+
+def test_la_victimizacion_por_departamento_marca_los_departamentos_con_pocos_casos():
+    codigo = nb.construir_celdas_metrica(38).codigo
+    assert 'grupos_con_pocos_casos(victimizacion_prep, "departamento", "victimizado_algun_delito")' in codigo
+    assert "poco_confiables=list(pocos_casos_depto.index)" in codigo
+    assert "victimizacion_depto_confiable" in codigo and "nota(" in codigo
+    frase = nb._RESUMEN_POR_METRICA[38]
+    assert "victimizacion_depto_confiable" in frase and "pocos_casos_depto" in frase
+    compile(frase, "resumen_38", "eval")
+
+
+def test_las_tasas_entre_victimas_avisan_si_un_delito_tiene_pocas_victimas():
+    for numero in (39, 40, 42):
+        codigo = nb.construir_celdas_metrica(numero).codigo
+        assert 'grupos_con_muestra_chica(victimizados' in codigo, numero
+        assert "nota(" in codigo, numero
+
+
+def test_las_frases_del_resumen_no_anidan_parentesis_ni_dicen_n_de_los_n():
+    """Del PDF real de 2024: «(generación silenciosa (hasta 1945))» y «En 5
+    de los 5 tipos de delito»."""
+    import pandas as pd
+
+    from encuesta_hogares import resumen as res
+
+    tabla = pd.DataFrame({"cohorte": ["Generación silenciosa (hasta 1945)", "Generación X (1965-1980)"], "pct": [81.2, 92.8]})
+    frase = res.brecha(tabla, "cohorte", "pct", "El acceso a internet")
+    assert "((" not in frase and "(generación silenciosa, hasta 1945)" in frase
+    assert res.en_cuantos(5, 5, "tipos de delito") == "En los 5 tipos de delito"
+    assert res.en_cuantos(3, 5, "tipos de delito") == "En 3 de los 5 tipos de delito"
+    assert res.en_cuantos(0, 5, "tipos de delito") == "En ninguno de los 5 tipos de delito"
+    assert res.nombre_sector("Hogares") == "hogares (servicio doméstico)"
+    assert res.nombre_sector("Formal") == "formal"
+    assert res.etiqueta("TREINTA Y TRES") == "Treinta y Tres"
+    assert res.nombre_propio("RÍO NEGRO") == "Río Negro"
+    assert res.nombre_propio("Treinta y Tres") == "Treinta y Tres"
+    assert "sector_formalidad" in nb._TERMINOS_POR_METRICA[35]

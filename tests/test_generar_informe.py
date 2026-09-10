@@ -287,18 +287,52 @@ def test_la_celda_de_cifras_es_la_ultima_y_no_imprime_nada(tmp_path):
     assert nb.ruta_cifras(tmp_path / "Informe_ECH_2025.ipynb").name == "_cifras_Informe_ECH_2025.json"
 
 
-def test_la_portada_del_pdf_lleva_titulo_subtitulo_y_solo_la_fecha():
+def test_la_portada_del_pdf_lleva_solo_el_nombre_de_la_encuesta_y_la_fecha():
     """La portada es texto visible que no pasa por las celdas del notebook:
-    título con el año, subtítulo que describe el contenido y solo la fecha
-    como pie (sin nombres de programas ni de proyectos)."""
+    el nombre de la encuesta con el año de los datos y la fecha de
+    generación, nada más — el dueño pidió sacar el «— Informe» y el
+    subtítulo (2026-09-10), y nunca nombres de programas ni de proyectos."""
     import html
     import re
-    texto = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", gi.portada(2025))))
-    assert "Encuesta Continua de Hogares 2025 — Informe" in texto
-    assert "microdatos del INE" in texto
-    assert re.search(r"Generado el \d{1,2} de [a-z]+ de \d{4}", texto)
+    texto = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", gi.portada(2025)))).strip()
+    assert texto.startswith("Encuesta Continua de Hogares 2025 ")
+    assert "Informe" not in texto and "microdatos" not in texto and "respaldada" not in texto
+    assert re.search(r"^Encuesta Continua de Hogares 2025 Generado el \d{1,2} de [a-z]+ de \d{4}$", texto)
     assert "proyecto" not in texto.lower() and "agente" not in texto.lower()
     assert ".portada" in gi.ESTILO_CSS.read_text(encoding="utf-8")
+
+
+def test_una_celda_a_medida_con_titulo_largo_no_pasa_la_validacion_previa():
+    """En la corrida real de 2024 el título de la celda a medida 44 tenía 84
+    caracteres y salió recortado por los dos lados: el guardián de 65
+    caracteres solo miraba los títulos literales de visualization.py."""
+    from encuesta_hogares import visualization as viz
+
+    largo = "Comunicación a la policía y denuncia formal, por tipo de delito: 2024 frente a 2025"
+    assert len(largo) > viz.LARGO_MAXIMO_TITULO
+    celda = nb.Celda(
+        markdown=f"### {gi.PRIMER_NUMERO_A_MEDIDA}. Algo\n\n**¿Qué pregunta responde?** ¿algo?",
+        codigo=f'fig = viz.plot_dumbbell([], [], [], "a", "b", titulo="{largo}")\nfig.show()',
+        markdown_final="*Por qué esta gráfica: dumbbell (Tufte; Knaflic, storytellingwithdata.com).*",
+    )
+    problemas = gi._validar_celdas_a_medida([celda], {gi.PRIMER_NUMERO_A_MEDIDA: '"frase"'})
+    assert any(f"tiene {len(largo)} caracteres" in p for p in problemas), problemas
+    corta = nb.Celda(celda.markdown, celda.codigo.replace(largo, "Denuncia formal: 2024 frente a 2025"), celda.markdown_final)
+    assert gi._validar_celdas_a_medida([corta], {gi.PRIMER_NUMERO_A_MEDIDA: '"frase"'}) == []
+
+
+def test_una_categoria_no_definida_en_las_cifras_bloquea_el_informe():
+    """Caso real (2024): la métrica 17 mostraba la barra «6-No Definido» con
+    el 43,7% de precariedad — todos los hogares del interior, porque el
+    estrato del INE existe solo para Montevideo."""
+    from encuesta_hogares import verificacion_notebook as vn
+
+    malas = {"precariedad_nivel": [{"nivel_economico": "5-Alto", "pct_precariedad": 6.76},
+                                   {"nivel_economico": "6-No Definido", "pct_precariedad": 43.67}]}
+    problemas = vn.categorias_sin_definir(malas)
+    assert len(problemas) == 1 and problemas[0].startswith("precariedad_nivel:") and "6-No Definido" in problemas[0]
+    buenas = {"precariedad_nivel": [{"nivel_economico": "1-Bajo", "pct_precariedad": 55.68}], "pobreza": {"pct_pobres": 12.99}}
+    assert vn.categorias_sin_definir(buenas) == []
 
 
 # --- rigor: bibliografía y ponderación ----------------------------------------

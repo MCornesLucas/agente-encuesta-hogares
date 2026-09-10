@@ -151,6 +151,10 @@ with bitacora.medir("carga_de_datos"):
     hogares_cond = preprocessing.decode_condiciones_vivienda(hogares)
     hogares_cond["pobre"] = hogares_cond["pobre"] == 1.0
     hogares_cond["nivel_economico"] = preprocessing.classify_nivel_economico(hogares_cond["estrato_tipo"])
+    # El estrato socioeconómico del INE existe solo para Montevideo: en el
+    # interior todos los hogares quedan «6-No Definido». Cualquier corte de
+    # vivienda por nivel económico se hace sobre este marco, no sobre el país.
+    hogares_cond_mdeo = hogares_cond.loc[hogares_cond["departamento"].str.upper() == "MONTEVIDEO"].copy()
     hogares_ext = preprocessing.prepare_hogares_extendido(hogares_mdeo)
     hogares_ext["calidad_conexion"] = preprocessing.clasificar_calidad_conexion(hogares_ext)
     tipo_hogar = preprocessing.clasificar_tipo_hogar(personas, hogares)
@@ -313,6 +317,13 @@ _GLOSARIO = {
         "seguridad social por ese trabajo. Es el criterio estándar en la región y el mismo que "
         "usa el paquete oficial de R del INE para la ECH."
     ),
+    "sector_formalidad": (
+        "**Sector formal, informal y hogares**: clasifica la unidad económica donde trabaja "
+        "la persona, según el marco de la OIT (17.ª CIET, 2003): *formal* (empresas y "
+        "organismos registrados), *informal* (unidades productivas no registradas) y "
+        "*hogares* (trabajo doméstico remunerado en hogares particulares). No es lo mismo que "
+        "la informalidad de la persona, que mira si aporta a la seguridad social."
+    ),
     "subempleo": (
         "**Subempleo**: personas ocupadas que trabajan menos horas de las que querrían y están "
         "disponibles para trabajar más."
@@ -325,7 +336,9 @@ _GLOSARIO = {
     ),
     "nivel_economico": (
         "**Nivel económico**: agrupación del estrato socioeconómico que asigna el INE a cada "
-        "hogar, de 1 (más bajo) a 5 (más alto)."
+        "hogar, de 1 (más bajo) a 5 (más alto). El INE lo define solo para Montevideo, así "
+        "que toda comparación por nivel económico de este informe se calcula sobre los "
+        "hogares de Montevideo."
     ),
     "hacinamiento": (
         "**Hacinamiento**: hogares con más de 2 personas por habitación."
@@ -435,7 +448,7 @@ _TERMINOS_POR_METRICA = {
     32: ("informalidad",),
     33: ("subempleo",),
     34: ("condicion_actividad", "tasa_desempleo"),
-    35: ("informalidad",),
+    35: ("sector_formalidad",),
     36: ("victimizacion",),
     37: ("victimizacion",),
     38: ("victimizacion",),
@@ -561,8 +574,9 @@ _PRESENTACION_BLOQUE = {
     "vivienda": (
         "En qué estado están las viviendas. Se releva un conjunto de problemas "
         "estructurales (humedad, goteras, grietas, riesgo de derrumbe) y se mira cuántos "
-        "hogares tienen al menos uno, y si esa carga se reparte parejo entre niveles "
-        "económicos y departamentos. Qué problemas se preguntan cambia según el año."
+        "hogares tienen al menos uno, y si esa carga se reparte parejo entre departamentos "
+        "y, dentro de Montevideo, entre niveles económicos. Qué problemas se preguntan "
+        "cambia según el año."
     ),
     "fies": (
         "Si los hogares tuvieron dificultades para acceder a alimentos por falta de "
@@ -872,7 +886,7 @@ def _m16() -> Celda:
 
 def _m17() -> Celda:
     codigo = (
-        'precariedad_nivel = analysis.precariedad_estructural_por(hogares_cond, "nivel_economico")\n'
+        'precariedad_nivel = analysis.precariedad_estructural_por(hogares_cond_mdeo, "nivel_economico")\n'
         'fig = viz.plot_precariedad_estructural_por(precariedad_nivel, "nivel económico")\nfig.show()'
     )
     return Celda(_markdown(17), codigo, _markdown_justificacion("barras_h"))
@@ -888,11 +902,11 @@ def _m18() -> Celda:
 
 def _m19() -> Celda:
     codigo = (
-        'precariedad_nivel = analysis.precariedad_estructural_por(hogares_cond, "nivel_economico")\n'
+        'precariedad_nivel = analysis.precariedad_estructural_por(hogares_cond_mdeo, "nivel_economico")\n'
         'brecha_precariedad = analysis.diferencia_entre_categorias(\n'
         '    precariedad_nivel, "nivel_economico", "1-Bajo", "5-Alto", "pct_precariedad"\n'
         ")\n"
-        'nota(f"Diferencia entre el nivel económico bajo y el alto: {_res.fmt(brecha_precariedad, 2)} puntos porcentuales")\n\n'
+        'nota(f"Diferencia en Montevideo entre el nivel económico bajo y el alto: {_res.fmt(brecha_precariedad, 2)} puntos porcentuales")\n\n'
         'fila_bajo = precariedad_nivel.set_index("nivel_economico").loc["1-Bajo", "pct_precariedad"]\n'
         'fila_alto = precariedad_nivel.set_index("nivel_economico").loc["5-Alto", "pct_precariedad"]\n'
         "fig = viz.plot_dumbbell(\n"
@@ -1130,22 +1144,50 @@ def _m37() -> Celda:
     return Celda(_markdown(37), codigo, _markdown_justificacion("barras"))
 
 
+# Victimización es un evento raro (1-3% de las personas en un mes): la
+# precisión de cada porcentaje la sostienen los CASOS, no las personas
+# encuestadas. En la corrida real de 2024, 17 de los 19 departamentos tenían
+# menos de 30 víctimas (Cerro Largo: 0 sobre 694 personas) y el resumen decía
+# «va de 0,0% (Cerro Largo) a 7,7% (Treinta y Tres)». Los departamentos con
+# pocos casos se marcan en gris en la gráfica y quedan fuera de la comparación
+# de extremos del resumen (ver docs/METODOLOGIA.md, sección 2).
+_AVISO_POCOS_CASOS = (
+    'if len(pocos_casos_depto):\n'
+    '    nota("Departamentos con menos de 30 víctimas en la muestra (estimación poco confiable, en gris en la gráfica): "\n'
+    '         + ", ".join(f"{_res.etiqueta(depto)} ({n} casos)" for depto, n in pocos_casos_depto.items()))\n\n'
+)
+
+# Las tasas entre víctimas (comunicación, denuncia, violencia) se calculan
+# sobre las víctimas de cada delito: ese es el grupo cuyo tamaño importa.
+_AVISO_VICTIMAS_CHICAS = (
+    'chicos_victimas_delito = analysis.grupos_con_muestra_chica(victimizados, "tipo_delito")\n'
+    'if len(chicos_victimas_delito):\n'
+    '    nota("Tipos de delito con menos de 30 víctimas en la muestra (estimación poco confiable): "\n'
+    '         + ", ".join(f"{delito} ({n} casos)" for delito, n in chicos_victimas_delito.items()))\n\n'
+)
+
+
 def _m38() -> Celda:
     codigo = (
-        'victimizacion_depto = analysis.pct_ponderado_por(\n'
+        'pocos_casos_depto = analysis.grupos_con_pocos_casos(victimizacion_prep, "departamento", "victimizado_algun_delito")\n'
+        + _AVISO_POCOS_CASOS
+        + 'victimizacion_depto = analysis.pct_ponderado_por(\n'
         '    victimizacion_prep, "departamento", "victimizado_algun_delito", "ponderador_victimizacion"\n'
         ")\n"
+        'victimizacion_depto_confiable = victimizacion_depto[~victimizacion_depto["departamento"].isin(pocos_casos_depto.index)]\n'
         "fig = viz.plot_pct_por(\n"
         '    victimizacion_depto, "departamento",\n'
         '    titulo="Victimización general por departamento", xlabel="Departamento",\n'
+        "    poco_confiables=list(pocos_casos_depto.index),\n"
         ")\nfig.show()"
     )
-    return Celda(_markdown(38), codigo, _markdown_justificacion("barras"))
+    return Celda(_markdown(38), codigo, _markdown_justificacion("barras_h"))
 
 
 def _m39() -> Celda:
     codigo = (
-        'comunicacion_delito = analysis.pct_ponderado_por(\n'
+        _AVISO_VICTIMAS_CHICAS
+        + 'comunicacion_delito = analysis.pct_ponderado_por(\n'
         '    victimizados, "tipo_delito", "comunicacion_policia", "ponderador_victimizacion"\n'
         ")\n"
         "fig = viz.plot_pct_por(\n"
@@ -1158,7 +1200,8 @@ def _m39() -> Celda:
 
 def _m40() -> Celda:
     codigo = (
-        'denuncia_delito = analysis.pct_ponderado_por(\n'
+        _AVISO_VICTIMAS_CHICAS
+        + 'denuncia_delito = analysis.pct_ponderado_por(\n'
         '    victimizados, "tipo_delito", "denuncia_formal", "ponderador_victimizacion"\n'
         ")\n"
         "fig = viz.plot_pct_por(\n"
@@ -1192,6 +1235,10 @@ def _m42() -> Celda:
     codigo = (
         "tipos_con_violencia = [info[\"nombre\"] for info in config.TIPOS_DELITO.values() if info[\"violencia\"]]\n"
         'victimizados_violencia = victimizados[victimizados["tipo_delito"].isin(tipos_con_violencia)]\n'
+        'chicos_victimas_violencia = analysis.grupos_con_muestra_chica(victimizados_violencia, "tipo_delito")\n'
+        'if len(chicos_victimas_violencia):\n'
+        '    nota("Tipos de delito con menos de 30 víctimas en la muestra (estimación poco confiable): "\n'
+        '         + ", ".join(f"{delito} ({n} casos)" for delito, n in chicos_victimas_violencia.items()))\n\n'
         "violencia_delito = analysis.pct_ponderado_por(\n"
         '    victimizados_violencia, "tipo_delito", "violencia", "ponderador_victimizacion"\n'
         ")\n"
@@ -1609,10 +1656,10 @@ _RESUMEN_POR_METRICA: dict[int, str] = {
     14: ('f"El componente que más separa a los departamentos entre sí es «{(componentes_territorio.max() - componentes_territorio.min()).idxmax()}»"'),
     15: 'f"La brecha entre el mejor y el peor departamento del índice territorial es de {_f(brecha_territorial, 2)} puntos"',
     16: 'f"El {_f(precariedad[\'pct_con_carencia\'])}% de los hogares del país vive en una vivienda con al menos una carencia estructural"',
-    17: ('f"La precariedad de la vivienda alcanza al {_f(_v(precariedad_nivel, \'pct_precariedad\', nivel_economico=\'1-Bajo\'))}% de los hogares del nivel económico bajo "'
+    17: ('f"En Montevideo, la precariedad de la vivienda alcanza al {_f(_v(precariedad_nivel, \'pct_precariedad\', nivel_economico=\'1-Bajo\'))}% de los hogares del nivel económico bajo "'
          'f"y al {_f(_v(precariedad_nivel, \'pct_precariedad\', nivel_economico=\'5-Alto\'))}% del alto"'),
     18: '_b(precariedad_depto, \'departamento\', \'pct_precariedad\', \'Por departamento, la precariedad de la vivienda\')',
-    19: 'f"La diferencia de precariedad entre el nivel económico bajo y el alto es de {_f(brecha_precariedad)} puntos porcentuales"',
+    19: 'f"En Montevideo, la diferencia de precariedad entre el nivel económico bajo y el alto es de {_f(brecha_precariedad)} puntos porcentuales"',
     20: 'f"La carencia estructural más frecuente es «{carencias_frecuentes.iloc[0][\'carencia\'].lower()}», presente en el {_f(carencias_frecuentes.iloc[0][\'pct_hogares\'])}% de los hogares"',
     21: 'f"El {_f(prevalencia_fies[\'moderada_o_severa\'])}% de los hogares vive inseguridad alimentaria moderada o severa, y el {_f(prevalencia_fies[\'severa\'])}% severa (calculado sobre la submuestra de hogares que respondió el módulo)"',
     22: ('f"La inseguridad alimentaria moderada o severa afecta al {_f(_v(inseguridad_quintil, \'pct_inseguridad\', quintil_ingreso=\'Quintil 1\'))}% de los hogares del quintil de menores ingresos "'
@@ -1634,15 +1681,23 @@ _RESUMEN_POR_METRICA: dict[int, str] = {
     33: 'f"El subempleo afecta al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'1-Hombre\'))}% de los hombres ocupados y al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'2-Mujer\'))}% de las mujeres ocupadas"',
     34: ('f"El desempleo juvenil (14 a 24 años) es de {_f(_v(tasas_edad_laboral, \'tasa_desempleo\', grupo_edad_laboral=\'Joven (14-24)\'))}%, "'
          'f"frente a {_f(_v(tasas_edad_laboral, \'tasa_desempleo\', grupo_edad_laboral=\'Resto\'))}% en el resto de la población activa"'),
-    35: ('f"La proporción de asalariados (empleados) va de {_f(situacion_por_sector[\'Empleado\'].min())}% en el sector {_res.etiqueta(situacion_por_sector[\'Empleado\'].idxmin()).lower()} "'
-         'f"a {_f(situacion_por_sector[\'Empleado\'].max())}% en el sector {_res.etiqueta(situacion_por_sector[\'Empleado\'].idxmax()).lower()}"'),
+    35: ('f"La proporción de asalariados (empleados) va de {_f(situacion_por_sector[\'Empleado\'].min())}% en el sector {_res.nombre_sector(situacion_por_sector[\'Empleado\'].idxmin())} "'
+         'f"a {_f(situacion_por_sector[\'Empleado\'].max())}% en el sector {_res.nombre_sector(situacion_por_sector[\'Empleado\'].idxmax())}"'),
     36: '_b(prevalencia_delito, \'tipo_delito\', \'pct\', \'En el último mes, la proporción de personas víctimas de cada tipo de delito\')',
     37: 'f"Fueron víctimas de algún delito en el último mes el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'1-Hombre\'))}% de los hombres y el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'2-Mujer\'))}% de las mujeres"',
-    38: '_b(victimizacion_depto, \'departamento\', \'pct\', \'Por departamento, la victimización en el último mes\')',
+    # Los departamentos con menos de 30 víctimas no entran en la comparación
+    # de extremos: con 0 casos sobre 694 personas el «0,0%» no es un dato.
+    38: ('(_b(victimizacion_depto, \'departamento\', \'pct\', \'Por departamento, la victimización en el último mes\') '
+         'if not len(pocos_casos_depto) else '
+         '(f"Entre los {len(victimizacion_depto_confiable)} departamentos con al menos 30 víctimas en la muestra, " '
+         '+ _b(victimizacion_depto_confiable, \'departamento\', \'pct\', \'la victimización en el último mes\') '
+         '+ f"; en los otros {len(pocos_casos_depto)} la estimación no es confiable por tener menos de 30 víctimas" '
+         'if len(victimizacion_depto_confiable) >= 2 else '
+         'f"Solo {len(victimizacion_depto_confiable)} departamento reúne 30 víctimas o más en la muestra, así que la victimización no se compara entre departamentos"))'),
     39: '_b(comunicacion_delito, \'tipo_delito\', \'pct\', \'Entre las víctimas, la comunicación a la policía\')',
     40: '_b(denuncia_delito, \'tipo_delito\', \'pct\', \'Entre las víctimas, la denuncia formal\')',
-    41: ('f"En {int((comunicacion_delito.set_index(\'tipo_delito\')[\'pct\'] > denuncia_delito.set_index(\'tipo_delito\')[\'pct\']).sum())} de los "'
-         'f"{len(comunicacion_delito)} tipos de delito, más víctimas comunican el hecho a la policía de las que lo denuncian formalmente"'),
+    41: ('_res.en_cuantos(int((comunicacion_delito.set_index(\'tipo_delito\')[\'pct\'] > denuncia_delito.set_index(\'tipo_delito\')[\'pct\']).sum()), '
+         'len(comunicacion_delito), "tipos de delito") + ", más víctimas comunican el hecho a la policía de las que lo denuncian formalmente"'),
     42: '_b(violencia_delito, \'tipo_delito\', \'pct\', \'La proporción de casos con violencia\')',
 }
 

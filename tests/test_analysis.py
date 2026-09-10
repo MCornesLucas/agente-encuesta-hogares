@@ -628,3 +628,22 @@ def test_adopcion_tablet_ibirapita_por_trata_sin_dato_como_no_tiene():
     )
     resumen = adopcion_tablet_ibirapita_por(df, "jefe_es_mayor").set_index("jefe_es_mayor")
     assert resumen.loc[True, "pct_con_tablet"] == round(1 / 3 * 100, 2)
+
+
+def test_grupos_con_pocos_casos_cuenta_los_positivos_y_no_el_tamano_del_grupo():
+    """Caso real (2024): Cerro Largo tenía 694 personas encuestadas y 0
+    víctimas — `grupos_con_muestra_chica` no lo marcaba y el informe decía
+    «va de 0,0% (Cerro Largo)». Un grupo sin ningún positivo también
+    cuenta (con cero), no desaparece de la lista."""
+    from encuesta_hogares.analysis import grupos_con_muestra_chica, grupos_con_pocos_casos
+
+    df = pd.DataFrame(
+        {
+            "departamento": ["A"] * 40 + ["B"] * 40 + ["C"] * 40,
+            "victima": [True] * 35 + [False] * 5 + [True] * 3 + [False] * 37 + [False] * 40,
+        }
+    )
+    assert list(grupos_con_muestra_chica(df, "departamento")) == []
+    pocos = grupos_con_pocos_casos(df, "departamento", "victima")
+    assert pocos.to_dict() == {"C": 0, "B": 3}
+    assert list(pocos.index) == ["C", "B"]

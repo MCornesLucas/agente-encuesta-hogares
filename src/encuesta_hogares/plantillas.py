@@ -194,9 +194,9 @@ _CATEGORIAS_METRICAS = {
     ]),
     "vivienda": ("4 · Vivienda", "", [
         (16, "Precariedad estructural de la vivienda", "¿qué porcentaje de hogares tiene al menos un problema estructural en su vivienda (humedad, goteras, grietas, etc.)?"),
-        (17, "Precariedad estructural según nivel económico", "¿tienen más problemas estructurales de vivienda los hogares de nivel económico más bajo?"),
+        (17, "Precariedad estructural según nivel económico", "¿tienen más problemas estructurales de vivienda los hogares de Montevideo de nivel económico más bajo?"),
         (18, "Precariedad estructural por departamento", "¿en qué departamentos hay más y menos problemas estructurales de vivienda?"),
-        (19, "Brecha de precariedad entre el nivel económico más bajo y el más alto", "¿cuántos puntos porcentuales de precariedad de vivienda separan a los hogares de nivel económico más bajo de los de nivel más alto?"),
+        (19, "Brecha de precariedad entre el nivel económico más bajo y el más alto", "¿cuántos puntos porcentuales de precariedad de vivienda separan, en Montevideo, a los hogares de nivel económico más bajo de los de nivel más alto?"),
         (20, "Carencias estructurales más frecuentes", "¿cuál es el problema de vivienda más común a nivel nacional, y cuáles le siguen?"),
     ]),
 }

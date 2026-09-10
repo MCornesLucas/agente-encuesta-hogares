@@ -89,6 +89,17 @@ p, li {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+/* El título de una métrica, su pregunta y su gráfica van juntos. La celda
+   de texto (título + pregunta + términos) y la celda con la gráfica son dos
+   bloques distintos: sin esta regla, el título quedaba al pie de una página
+   y la gráfica en la siguiente en casi todas las métricas del PDF real de
+   2024 (52 páginas, la mitad de cada una en blanco). El h3 ya tenía
+   "break-after: avoid", pero eso solo protege la línea del título, no la
+   celda entera. */
+.jp-Cell:has(h2), .jp-Cell:has(h3), .jp-Cell:has(h4) {
+  break-after: avoid;
+  page-break-after: avoid;
+}
 img, .jp-RenderedImage img, .output_png img {
   max-width: 100% !important;
   max-height: 230mm !important;

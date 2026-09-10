@@ -124,6 +124,11 @@ Organizado por tema. Dentro de cada tema, alfabético por autor/organismo.
 
 - OIT/ILO (2016). Key Indicators of the Labour Market (KILM), novena
   edición: https://www.ilo.org/publications/key-indicators-labour-market-kilm-ninth-edition
+- OIT/ILO (2003). Directrices sobre una definición estadística de empleo
+  informal, 17.ª Conferencia Internacional de Estadísticos del Trabajo
+  (CIET) — el marco que separa el sector formal, el sector informal y los
+  hogares (trabajo doméstico remunerado) como unidades económicas, usado
+  por la métrica 35: https://www.ilo.org/public/spanish/bureau/stat/download/guidelines/defempl.pdf
 - "Se profundizó la brecha de género en el mercado laboral" — Ámbito:
   https://www.ambito.com/uruguay/se-profundizo-la-brecha-genero-el-mercado-laboral-n6096977
 - "El desempleo entre los más jóvenes cerró cerca del 25% en 2024" — Ámbito:

@@ -438,6 +438,37 @@ _INDICADORES_PLAUSIBILIDAD = (
 )
 
 
+_CATEGORIA_SIN_DEFINIR = re.compile(r"no definid[oa]|sin dato|sin definir", re.IGNORECASE)
+
+
+def _textos_anidados(valor, camino: str = "") -> Iterable[tuple[str, str]]:
+    if isinstance(valor, dict):
+        for k, v in valor.items():
+            yield from _textos_anidados(k, camino)
+            yield from _textos_anidados(v, f"{camino}.{k}" if camino else str(k))
+    elif isinstance(valor, (list, tuple)):
+        for v in valor:
+            yield from _textos_anidados(v, camino)
+    elif isinstance(valor, str):
+        yield camino, valor
+
+
+def categorias_sin_definir(cifras: dict) -> list[str]:
+    """Tablas del JSON de cifras con alguna categoría «No Definido» (o
+    equivalente): una barra así en el informe es un grupo que el cálculo
+    no supo clasificar, no un dato. Caso real (2024): «6-No Definido» con
+    el 43,7% de precariedad en la métrica 17 eran todos los hogares del
+    interior, porque el estrato del INE existe solo para Montevideo."""
+    problemas = []
+    for camino, texto in _textos_anidados(cifras):
+        if _CATEGORIA_SIN_DEFINIR.search(texto):
+            variable = camino.split(".")[0] if camino else "(raíz)"
+            mensaje = f"{variable}: trae la categoría «{texto}» — el cálculo mezcla hogares sin clasificar"
+            if mensaje not in problemas:
+                problemas.append(mensaje)
+    return problemas
+
+
 def indicadores_para_plausibilidad(cifras: dict) -> dict[str, float]:
     """Las cifras ejecutadas del informe que `verificacion_plausibilidad`
     sabe juzgar (identidades que siempre se cumplen y rangos anchos

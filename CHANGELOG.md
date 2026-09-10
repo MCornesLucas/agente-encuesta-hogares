@@ -10,6 +10,61 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.16.0] — 2026-09-10
+
+Revisión completa del PDF de la corrida real de 2024 (52 páginas, 44
+métricas), cruzada con el código y con los microdatos. Dos correcciones
+metodológicas y el resto de forma.
+
+### Corregido
+
+- **Las métricas 17 y 19 (precariedad por nivel económico) se calculan
+  sobre Montevideo y lo dicen.** El estrato socioeconómico del INE existe
+  solo para Montevideo: los 14.416 hogares del interior quedaban en una
+  barra «6-No Definido» con 43,7% de precariedad, y el resumen decía «55,7%
+  de los hogares del nivel económico bajo» como si fuera nacional. Ahora
+  la pregunta, el glosario, la presentación del bloque y el resumen acotan
+  a Montevideo; un guardián bloquea el informe si alguna tabla trae una
+  categoría «No Definido», y un test exige que todo corte por nivel
+  económico use un marco de hogares de Montevideo. Quien compare con una
+  edición anterior verá desaparecer esa barra y cambiar el título.
+- **La victimización por departamento (38) no afirma extremos sobre un
+  puñado de casos.** En 2024, 17 de los 19 departamentos tienen menos de
+  30 víctimas en la muestra (Cerro Largo: 0 sobre 694 personas) y el
+  resumen decía «va de 0,0% (Cerro Largo) a 7,7% (Treinta y Tres)». Nueva
+  regla para eventos raros (`analysis.grupos_con_pocos_casos`, sección 2 de
+  METODOLOGIA.md): los departamentos con menos de 30 víctimas se dibujan
+  en gris, la celda los lista, y el resumen compara solo los que llegan a
+  30. Las tasas entre víctimas (39, 40, 42) avisan si algún tipo de delito
+  tiene menos de 30 víctimas.
+- **Título, pregunta y gráfica de cada métrica van en la misma página.** En
+  36 de las 44 métricas el título quedaba al pie de una página y la gráfica
+  en la siguiente, con media página en blanco. Regla de impresión en
+  `docs/informe_estilo.css`; verificado sobre la edición real (0 títulos
+  huérfanos).
+- **El título de una celda a medida también respeta los 65 caracteres.** El
+  de la comparación 44 salió recortado por los dos lados; la validación
+  previa ahora lo rechaza antes de ejecutar.
+- **Textos**: portada solo con «Encuesta Continua de Hogares <año>» y la
+  fecha (decisión del dueño); glosario del sector «hogares» (servicio
+  doméstico, marco OIT 17.ª CIET, nueva entrada en la bibliografía) para la
+  métrica 35; el resumen ya no anida paréntesis («generación silenciosa,
+  hasta 1945») ni dice «En 5 de los 5 tipos de delito».
+
+### Cambiado
+
+- **Cifras con el mismo formato en gráficas y texto**: coma decimal, un
+  decimal y «%» en toda barra de porcentaje (cinco gráficas mostraban
+  «89.99» o «61.05»); heatmap con coma decimal.
+- **Un solo color por gráfica** salvo que el color signifique algo: ocho
+  gráficas pintaban cada barra de un color distinto.
+- **Departamentos siempre en barras horizontales ordenadas y con el nombre
+  como se escribe** («Treinta y Tres»); la 38 era la única vertical y sin
+  ordenar, y los nombres salían en mayúsculas sostenidas en unas gráficas y
+  no en otras. Nueva sección «Formato y color» en
+  CONVENCIONES_DE_GRAFICAS.md, con guardianes de clase en
+  `tests/test_visualization.py`.
+
 ## [0.15.6] — 2026-09-09
 
 ### Corregido

@@ -9,7 +9,56 @@ import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
 
+from . import resumen as _res
 from .analysis import ResumenConectividad
+
+# ============================================================================
+# Convenciones comunes a todas las gráficas (ver docs/CONVENCIONES_DE_GRAFICAS.md,
+# «Formato y color»). Nacen de la revisión del PDF real de 2024:
+#
+# - Las cifras salen con coma decimal y punto de miles, como el texto del
+#   informe (`resumen.fmt`), y con un decimal y el símbolo «%» en toda barra
+#   de porcentaje. Cinco gráficas mostraban «89.99» o «61.05» y el resto
+#   «65.2%»; el resumen decía «65,2%». `SEPARADORES` es el formato de Plotly
+#   (decimal, miles) que aplica a etiquetas y ejes; las etiquetas se
+#   formatean con `texttemplate`, nunca a mano con f-strings (esas no pasan
+#   por el separador).
+# - El color no decora: una barra por categoría lleva UN color (`COLOR_BASE`)
+#   salvo que el color signifique algo (una leyenda, la severidad). Ocho
+#   gráficas pintaban cada barra de un color distinto sin que significara
+#   nada (Tufte, data-ink ratio).
+# - Los departamentos se leen como se escriben («Treinta y Tres», no
+#   «TREINTA Y TRES» en unas gráficas y «Treinta y Tres» en otras) y siempre
+#   en barras horizontales ordenadas (19 categorías con nombres largos).
+# - Un grupo con pocos casos se dibuja en `COLOR_POCO_CONFIABLE` (gris) y la
+#   celda lo dice en una nota; no desaparece ni se muestra como un dato más.
+# ============================================================================
+
+SEPARADORES = ",."
+COLOR_BASE = "#5a7fa6"
+COLOR_POCO_CONFIABLE = "#c9ced6"
+# El título más largo que pasó una revisión visual real en una figura de 800
+# px tiene 65 caracteres; lo comparten el test de clase de
+# test_visualization.py y la validación previa de las celdas a medida.
+LARGO_MAXIMO_TITULO = 65
+
+
+def _formato_local(fig):
+    """Última parada de toda gráfica de Plotly: coma decimal y punto de
+    miles en etiquetas y ejes. Las de matplotlib se devuelven tal cual."""
+    if isinstance(fig, go.Figure):
+        fig.update_layout(separators=SEPARADORES)
+    return fig
+
+
+def _legible(valores) -> list[str]:
+    """Nombres en mayúsculas sostenidas («ARTIGAS», «TREINTA Y TRES») tal
+    como se leen; el resto queda igual."""
+    return [_res.nombre_propio(v) for v in valores]
+
+
+def _con_etiquetas_legibles(resumen: pd.DataFrame, columna: str) -> pd.DataFrame:
+    return resumen.assign(**{columna: _legible(resumen[columna])})
 
 
 def plot_dumbbell(categorias: list, valores_a: list, valores_b: list, nombre_a: str, nombre_b: str, titulo: str, xlabel: str = "%"):
@@ -31,6 +80,7 @@ def plot_dumbbell(categorias: list, valores_a: list, valores_b: list, nombre_a: 
     `go.Scatter`: una traza de líneas (los segmentos que conectan cada
     par) y dos trazas de marcadores (una por serie).
     """
+    categorias = _legible(categorias)
     line_x, line_y = [], []
     for categoria, valor_a, valor_b in zip(categorias, valores_a, valores_b):
         line_x += [valor_a, valor_b, None]
@@ -39,8 +89,8 @@ def plot_dumbbell(categorias: list, valores_a: list, valores_b: list, nombre_a: 
     fig = go.Figure(
         data=[
             go.Scatter(x=line_x, y=line_y, mode="lines", line=dict(color="#8b949e", width=2), showlegend=False, hoverinfo="skip"),
-            go.Scatter(x=valores_a, y=categorias, mode="markers", name=nombre_a, marker=dict(color="#d1495b", size=14)),
-            go.Scatter(x=valores_b, y=categorias, mode="markers", name=nombre_b, marker=dict(color="#66a182", size=14)),
+            go.Scatter(x=valores_a, y=categorias, mode="markers", name=_res.nombre_propio(nombre_a), marker=dict(color="#d1495b", size=14)),
+            go.Scatter(x=valores_b, y=categorias, mode="markers", name=_res.nombre_propio(nombre_b), marker=dict(color="#66a182", size=14)),
         ]
     )
     altura = max(300, 80 * len(categorias) + 150)
@@ -57,7 +107,7 @@ def plot_dumbbell(categorias: list, valores_a: list, valores_b: list, nombre_a: 
         width=850,
         height=altura,
     )
-    return fig
+    return _formato_local(fig)
 
 
 # ============================================================================
@@ -83,9 +133,9 @@ def plot_distribucion_conectividad(resumen: ResumenConectividad):
         height=400,
         color_discrete_sequence=px.colors.qualitative.Pastel,
     )
-    fig.update_traces(width=0.5, text=data["Porcentaje"], textposition="auto")
+    fig.update_traces(width=0.5, text=data["Porcentaje"], texttemplate="%{text:.1f}%", textposition="auto")
     fig.update_layout(yaxis={"categoryorder": "total ascending"}, title_x=0.5, title_y=0.85)
-    return fig
+    return _formato_local(fig)
 
 
 # ============================================================================
@@ -103,14 +153,16 @@ def plot_brecha_digital(brecha_df: pd.DataFrame):
         xaxis_title="Nivel económico", yaxis_title="Penetración (%)",
         legend_title="Tecnología", width=900, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def _plot_barras_100_apiladas(tabla_pct: pd.DataFrame, titulo: str, xlabel: str):
     """Barras 100% apiladas: proporción de una variable dentro de categorías de otra."""
     fig, ax = plt.subplots(figsize=(8, 5))
     tabla_pct.plot(kind="bar", stacked=True, ax=ax, colormap="viridis", width=0.6)
-    ax.set_title(titulo, fontsize=14)
+    # `pad`: sin él, el título quedaba pegado al borde superior del área de
+    # dibujo (visto en el PDF real de 2024, métrica 3).
+    ax.set_title(titulo, fontsize=13, pad=14)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("% dentro de cada grupo")
     ax.set_ylim(0, 100)
@@ -118,7 +170,7 @@ def _plot_barras_100_apiladas(tabla_pct: pd.DataFrame, titulo: str, xlabel: str)
     ax.tick_params(axis="x", rotation=0)
     sns.despine(ax=ax)
     fig.tight_layout()
-    return fig
+    return _formato_local(fig)
 
 
 def plot_ingreso_hogar_departamento(serie: pd.Series):
@@ -132,13 +184,12 @@ def plot_ingreso_hogar_departamento(serie: pd.Series):
     métricas a medida del paso 6 (ver el docstring de esa función).
     """
     fig = px.bar(
-        y=serie.index, x=serie.values, orientation="h",
+        y=_legible(serie.index), x=serie.values, orientation="h",
         title="Ingreso típico del hogar por departamento",
-        color=serie.index,
-        color_discrete_sequence=px.colors.qualitative.Safe,
-        text=[f"{v:,.0f}" for v in serie.values],
+        color_discrete_sequence=[COLOR_BASE],
+        text=serie.values,
     )
-    fig.update_traces(textposition="outside")
+    fig.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
     fig.update_layout(
         yaxis_title="", xaxis_title="Ingreso típico del hogar (UYU, sin valor locativo)",
         yaxis={"categoryorder": "total ascending"},
@@ -150,7 +201,7 @@ def plot_ingreso_hogar_departamento(serie: pd.Series):
         xaxis_range=[0, float(serie.max()) * 1.15],
         showlegend=False, width=800, height=550, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_precariedad_estructural(resultado: dict):
@@ -167,9 +218,9 @@ def plot_precariedad_estructural(resultado: dict):
         title="Precariedad estructural de la vivienda",
         width=800, height=350, color_discrete_sequence=["#d1495b"],
     )
-    fig.update_traces(width=0.5, text=data["Porcentaje"], textposition="auto")
+    fig.update_traces(width=0.5, text=data["Porcentaje"], texttemplate="%{text:.1f}%", textposition="auto")
     fig.update_layout(xaxis_title="% de hogares", yaxis_title="", title_x=0.5)
-    return fig
+    return _formato_local(fig)
 
 
 def plot_precariedad_estructural_por(resumen: pd.DataFrame, criterio: str):
@@ -180,6 +231,7 @@ def plot_precariedad_estructural_por(resumen: pd.DataFrame, criterio: str):
     nombres largos — Cleveland & McGill, 1984).
     """
     columna_y = resumen.columns[0]
+    resumen = _con_etiquetas_legibles(resumen, columna_y)
     fig = px.bar(
         resumen, y=columna_y, x="pct_precariedad", orientation="h",
         title=f"Precariedad estructural de la vivienda según {criterio}", text="pct_precariedad",
@@ -196,7 +248,7 @@ def plot_precariedad_estructural_por(resumen: pd.DataFrame, criterio: str):
         xaxis_range=[0, resumen["pct_precariedad"].max() * 1.15],
         width=850, height=550, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_carencias_estructurales_mas_frecuentes(resumen: pd.DataFrame):
@@ -218,7 +270,7 @@ def plot_carencias_estructurales_mas_frecuentes(resumen: pd.DataFrame):
         xaxis_range=[0, resumen["pct_hogares"].max() * 1.15],
         width=850, height=500, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 # ============================================================================
@@ -234,9 +286,9 @@ def plot_pct_pobres_indigentes(resultado: dict):
         title="Hogares en situación de pobreza e indigencia",
         width=800, height=350, color_discrete_sequence=["#d1495b"],
     )
-    fig.update_traces(width=0.5, text=data["Porcentaje"], textposition="auto")
+    fig.update_traces(width=0.5, text=data["Porcentaje"], texttemplate="%{text:.1f}%", textposition="auto")
     fig.update_layout(xaxis_title="% de hogares", yaxis_title="", title_x=0.5)
-    return fig
+    return _formato_local(fig)
 
 
 def plot_tasa_jefatura_femenina(resultado: dict):
@@ -248,9 +300,9 @@ def plot_tasa_jefatura_femenina(resultado: dict):
         title="Jefatura de hogar por sexo",
         width=800, height=350, color_discrete_sequence=["#5a7fa6"],
     )
-    fig.update_traces(width=0.5, text=data["Porcentaje"], textposition="auto")
+    fig.update_traces(width=0.5, text=data["Porcentaje"], texttemplate="%{text:.1f}%", textposition="auto")
     fig.update_layout(xaxis_title="% de hogares", yaxis_title="", title_x=0.5)
-    return fig
+    return _formato_local(fig)
 
 
 def plot_tipos_hogar(resumen: pd.DataFrame):
@@ -270,7 +322,7 @@ def plot_tipos_hogar(resumen: pd.DataFrame):
         xaxis_range=[0, resumen["pct_hogares"].max() * 1.15],
         width=800, height=450, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_hacinamiento_por(resumen: pd.DataFrame, criterio: str):
@@ -287,7 +339,7 @@ def plot_hacinamiento_por(resumen: pd.DataFrame, criterio: str):
         yaxis_range=[0, max(resumen["pct_hacinamiento"].max() * 1.3, 5)],
         width=800, height=500, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_razon_dependencia_por(resumen: pd.DataFrame, criterio: str):
@@ -299,6 +351,7 @@ def plot_razon_dependencia_por(resumen: pd.DataFrame, criterio: str):
     & McGill, 1984).
     """
     columna_y = resumen.columns[0]
+    resumen = _con_etiquetas_legibles(resumen, columna_y)
     fig = px.bar(
         resumen, y=columna_y, x="razon_dependencia", orientation="h",
         title=f"Razón de dependencia demográfica según {criterio}", text="razon_dependencia",
@@ -315,7 +368,7 @@ def plot_razon_dependencia_por(resumen: pd.DataFrame, criterio: str):
         xaxis_range=[0, resumen["razon_dependencia"].max() * 1.15],
         width=850, height=550, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_indice_desarrollo_territorial(resultado: pd.DataFrame):
@@ -324,6 +377,7 @@ def plot_indice_desarrollo_territorial(resultado: pd.DataFrame):
     analysis.indice_desarrollo_territorial).
     """
     df_plot = resultado.reset_index().rename(columns={resultado.index.name or "index": "departamento"})
+    df_plot = _con_etiquetas_legibles(df_plot, "departamento")
     fig = px.bar(
         df_plot, y="departamento", x="indice", orientation="h",
         title="Índice de desarrollo territorial por departamento", text="indice",
@@ -336,7 +390,7 @@ def plot_indice_desarrollo_territorial(resultado: pd.DataFrame):
         xaxis_range=[0, 1.1],
         width=850, height=550, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_perfil_territorial(resultado: pd.DataFrame):
@@ -347,13 +401,17 @@ def plot_perfil_territorial(resultado: pd.DataFrame):
     """
     columnas_dimensiones = [c for c in resultado.columns if c != "indice"]
     tabla = resultado[columnas_dimensiones].sort_values(columnas_dimensiones[0])
+    tabla.index = _legible(tabla.index)
+    # Las cifras de cada celda con coma decimal, como el resto del informe
+    # (seaborn solo sabe formatear con punto).
+    anotaciones = tabla.apply(lambda columna: columna.map(lambda v: f"{v:.2f}".replace(".", ",")))
     fig, ax = plt.subplots(figsize=(7, 8))
-    sns.heatmap(tabla, annot=True, fmt=".2f", cmap="viridis", cbar_kws={"label": "0 a 1 (más alto = mejor)"}, ax=ax)
+    sns.heatmap(tabla, annot=anotaciones, fmt="", cmap="viridis", cbar_kws={"label": "0 a 1 (más alto = mejor)"}, ax=ax)
     ax.set_title("Perfil territorial por departamento", fontsize=13)
     ax.set_xlabel("")
     ax.set_ylabel("")
     fig.tight_layout()
-    return fig
+    return _formato_local(fig)
 
 
 def plot_pct_unipersonales_mayores(resultado: dict):
@@ -368,9 +426,9 @@ def plot_pct_unipersonales_mayores(resultado: dict):
         title="Hogares unipersonales según edad de su integrante",
         width=800, height=350, color_discrete_sequence=["#8d6ab8"],
     )
-    fig.update_traces(width=0.5, text=data["Porcentaje"], textposition="auto")
+    fig.update_traces(width=0.5, text=data["Porcentaje"], texttemplate="%{text:.1f}%", textposition="auto")
     fig.update_layout(xaxis_title="% de hogares unipersonales", yaxis_title="", title_x=0.5)
-    return fig
+    return _formato_local(fig)
 
 
 def plot_brecha_digital_por_cohorte(brecha_df: pd.DataFrame):
@@ -384,7 +442,7 @@ def plot_brecha_digital_por_cohorte(brecha_df: pd.DataFrame):
         xaxis_title="Cohorte generacional (según edad del jefe/a de hogar)", yaxis_title="Penetración (%)",
         legend_title="Tecnología", width=950, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_brecha_digital_por_jefatura(brecha_df: pd.DataFrame):
@@ -398,7 +456,7 @@ def plot_brecha_digital_por_jefatura(brecha_df: pd.DataFrame):
         xaxis_title="Sexo del jefe/a de hogar", yaxis_title="Penetración (%)",
         legend_title="Tecnología", width=800, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_calidad_conexion_por(tabla_pct: pd.DataFrame, criterio: str):
@@ -448,7 +506,7 @@ def plot_indice_acceso_digital_por(resumen: pd.DataFrame, criterio: str):
         yaxis_range=[0, 3.5],
         width=800, height=500, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_adopcion_tablet_ibirapita(resumen: pd.DataFrame, criterio: str):
@@ -467,7 +525,7 @@ def plot_adopcion_tablet_ibirapita(resumen: pd.DataFrame, criterio: str):
         yaxis_range=[0, max(resumen["pct_con_tablet"].max() * 1.3, 5)],
         width=800, height=500, title_x=0.5, showlegend=False,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_prevalencia_inseguridad_alimentaria(prevalencia: dict):
@@ -478,16 +536,17 @@ def plot_prevalencia_inseguridad_alimentaria(prevalencia: dict):
     fig = px.bar(
         x=categorias, y=valores,
         title="Prevalencia de inseguridad alimentaria en los hogares",
+        # El color sí significa acá: la severa es el caso más grave.
         color=categorias,
         color_discrete_map={"Moderada o severa": "#eeb95c", "Severa": "#d1495b"},
-        text=[f"{v:.1f}%" for v in valores],
+        text=valores,
     )
-    fig.update_traces(textposition="outside")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig.update_layout(
         xaxis_title="", yaxis_title="% de hogares (ponderado)",
         showlegend=False, width=650, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_inseguridad_alimentaria_por(resumen: pd.DataFrame, columna_grupo: str, titulo: str, xlabel: str):
@@ -495,16 +554,15 @@ def plot_inseguridad_alimentaria_por(resumen: pd.DataFrame, columna_grupo: str, 
     fig = px.bar(
         resumen, x=columna_grupo, y="pct_inseguridad",
         title=titulo,
-        color=columna_grupo,
-        color_discrete_sequence=px.colors.qualitative.Safe,
-        text=[f"{v:.1f}%" for v in resumen["pct_inseguridad"]],
+        color_discrete_sequence=[COLOR_BASE],
+        text="pct_inseguridad",
     )
-    fig.update_traces(textposition="outside")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig.update_layout(
         xaxis_title=xlabel, yaxis_title="% de hogares en inseguridad alimentaria (ponderado)",
         showlegend=False, width=650, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_tasas_actividad_empleo_desempleo(tasas: dict):
@@ -515,16 +573,15 @@ def plot_tasas_actividad_empleo_desempleo(tasas: dict):
     fig = px.bar(
         x=categorias, y=valores,
         title="Tasas de actividad, empleo y desempleo (promedio de los 12 meses)",
-        color=categorias,
-        color_discrete_sequence=px.colors.qualitative.Safe,
-        text=[f"{v:.1f}%" for v in valores],
+        color_discrete_sequence=[COLOR_BASE],
+        text=valores,
     )
-    fig.update_traces(textposition="outside")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig.update_layout(
         xaxis_title="", yaxis_title="% (ponderado, promedio mensual)",
         showlegend=False, width=650, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_tasas_por_grupo(resumen: pd.DataFrame, columna_grupo: str, titulo: str):
@@ -540,14 +597,14 @@ def plot_tasas_por_grupo(resumen: pd.DataFrame, columna_grupo: str, titulo: str)
         df_plot, x="tasa", y="valor", color=columna_grupo, barmode="group",
         title=titulo,
         color_discrete_sequence=px.colors.qualitative.Safe,
-        text=[f"{v:.1f}%" for v in df_plot["valor"]],
+        text="valor",
     )
-    fig.update_traces(textposition="outside")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig.update_layout(
         xaxis_title="", yaxis_title="% (ponderado, promedio mensual)",
         width=700, height=500, title_x=0.5, legend_title="",
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_tasas_por_anio(tabla: pd.DataFrame):
@@ -584,7 +641,7 @@ def plot_tasas_por_anio(tabla: pd.DataFrame):
         xaxis_title="Año", yaxis_title="% (ponderado, promedio mensual)",
         legend_title="", width=800, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_serie_por_anio(
@@ -631,7 +688,7 @@ def plot_serie_por_anio(
         legend_title="", showlegend=len(columnas_valor) > 1,
         width=800, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
 def plot_tasa_mensual_promedio_por(resumen: pd.DataFrame, columna_grupo: str, titulo: str):
@@ -642,14 +699,14 @@ def plot_tasa_mensual_promedio_por(resumen: pd.DataFrame, columna_grupo: str, ti
     Cleveland & McGill, 1984); no perjudica los casos con pocas
     categorías (sexo, nivel educativo), que se leen igual de bien así.
     """
+    resumen = _con_etiquetas_legibles(resumen, columna_grupo)
     fig = px.bar(
         resumen, y=columna_grupo, x="pct_promedio", orientation="h",
         title=titulo,
-        color=columna_grupo,
-        color_discrete_sequence=px.colors.qualitative.Safe,
-        text=[f"{v:.1f}%" for v in resumen["pct_promedio"]],
+        color_discrete_sequence=[COLOR_BASE],
+        text="pct_promedio",
     )
-    fig.update_traces(textposition="outside")
+    fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
     fig.update_layout(
         yaxis_title="", xaxis_title="% (ponderado, promedio mensual)",
         yaxis={"categoryorder": "total ascending"},
@@ -661,28 +718,55 @@ def plot_tasa_mensual_promedio_por(resumen: pd.DataFrame, columna_grupo: str, ti
         xaxis_range=[0, resumen["pct_promedio"].max() * 1.15],
         showlegend=False, width=750, height=500, title_x=0.5,
     )
-    return fig
+    return _formato_local(fig)
 
 
-def plot_pct_por(resumen: pd.DataFrame, columna_grupo: str, titulo: str, xlabel: str, columna_valor: str = "pct"):
+def plot_pct_por(
+    resumen: pd.DataFrame,
+    columna_grupo: str,
+    titulo: str,
+    xlabel: str,
+    columna_valor: str = "pct",
+    poco_confiables: list | None = None,
+):
     """Barras simples: % ponderado por grupo — genérica para prevalencia de
     victimización, tasas de comunicación/denuncia/violencia por tipo de
-    delito, o cualquier corte similar sin promedio mensual."""
-    fig = px.bar(
-        resumen, x=columna_grupo, y=columna_valor,
-        title=titulo,
-        color=columna_grupo,
-        color_discrete_sequence=px.colors.qualitative.Safe,
-        text=[f"{v:.1f}%" for v in resumen[columna_valor]],
-    )
-    fig.update_traces(textposition="outside")
-    fig.update_layout(
-        xaxis_title=xlabel, yaxis_title="% (ponderado)",
-        showlegend=False, width=700, height=500, title_x=0.5,
-        # Un poco de margen arriba de la barra más alta, para que la
-        # etiqueta de porcentaje no quede cortada por el borde del gráfico
-        # cuando el valor está cerca del máximo (ej. 86%).
-        yaxis_range=[0, resumen[columna_valor].max() * 1.15],
-    )
-    return fig
+    delito, o cualquier corte similar sin promedio mensual.
+
+    Por departamento (o con más de seis categorías) las barras son
+    horizontales y ordenadas, como toda gráfica por departamento del informe
+    (Cleveland & McGill, 1984); en el PDF real de 2024 la victimización por
+    departamento era la única vertical, sin ordenar y con 19 etiquetas
+    rotadas.
+
+    `poco_confiables`: grupos con menos de 30 casos en la muestra (ver
+    `analysis.grupos_con_pocos_casos`). Se dibujan en gris, para que se vean
+    pero no se lean como un dato más; la celda los explica en una nota.
+    """
+    resumen = _con_etiquetas_legibles(resumen, columna_grupo)
+    grises = set(_legible(poco_confiables or []))
+    colores = [COLOR_POCO_CONFIABLE if g in grises else COLOR_BASE for g in resumen[columna_grupo]]
+    horizontal = columna_grupo == "departamento" or len(resumen) > 6
+    if horizontal:
+        fig = px.bar(resumen, y=columna_grupo, x=columna_valor, orientation="h", title=titulo, text=columna_valor)
+        fig.update_layout(
+            yaxis_title="", xaxis_title="% (ponderado)",
+            yaxis={"categoryorder": "total ascending"},
+            # Margen a la derecha de la barra más larga, como en toda barra
+            # horizontal con etiqueta afuera (test de clase).
+            xaxis_range=[0, resumen[columna_valor].max() * 1.15],
+            showlegend=False, width=850, height=550, title_x=0.5,
+        )
+    else:
+        fig = px.bar(resumen, x=columna_grupo, y=columna_valor, title=titulo, text=columna_valor)
+        fig.update_layout(
+            xaxis_title=xlabel, yaxis_title="% (ponderado)",
+            showlegend=False, width=700, height=500, title_x=0.5,
+            # Un poco de margen arriba de la barra más alta, para que la
+            # etiqueta de porcentaje no quede cortada por el borde del gráfico
+            # cuando el valor está cerca del máximo (ej. 86%).
+            yaxis_range=[0, resumen[columna_valor].max() * 1.15],
+        )
+    fig.update_traces(marker_color=colores, texttemplate="%{text:.1f}%", textposition="outside")
+    return _formato_local(fig)
 

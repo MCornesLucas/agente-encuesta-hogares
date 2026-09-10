@@ -80,15 +80,18 @@ Qué hace `entregar` (todo en `src/encuesta_hogares/generar_informe.py`):
 1. Playwright tiene que estar listo (una sola vez por instalación):
    `playwright install chromium`, que ya corre `instalar.bat`.
 2. Toma el HTML sin código y le antepone al `<body>` una portada
-   (`generar_informe.portada`): título con el año, subtítulo que describe
-   el contenido y la fecha de generación como único pie. Es texto visible
+   (`generar_informe.portada`): el nombre de la encuesta con el año de los
+   datos y la fecha de generación como único pie, nada más. Es texto visible
    que no pasa por las celdas del notebook, así que tiene su propio test.
 3. Inyecta `docs/informe_estilo.css` dentro de un `<style>` en el `<head>`.
    Esa hoja define tamaño A4, márgenes, tipografía y, sobre todo,
    `max-width`/`max-height` + `page-break-inside: avoid` en las imágenes —
    es lo que evita que una gráfica quede cortada entre dos páginas o se
-   salga del ancho de la hoja. No simplificarla: cada regla resuelve un
-   problema real de paginación.
+   salga del ancho de la hoja — y `break-after: avoid` en toda celda con
+   encabezado, para que el título y la pregunta de una métrica nunca queden
+   al pie de una página con la gráfica en la siguiente (en el PDF real de
+   2024 pasaba en 36 de las 44 métricas). No simplificarla: cada regla
+   resuelve un problema real de paginación.
 4. Escribe ese HTML intermedio al lado del final, con nombre derivado
    (`_Informe_ECH_<año>_impresion.html`), lo imprime con Chromium
    (`page.pdf`, formato A4, `print_background`, numeración "Página N de

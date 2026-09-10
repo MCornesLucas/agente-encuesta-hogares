@@ -59,7 +59,7 @@ from pathlib import Path
 
 import nbformat
 
-from . import bitacora, config, entrega, verificacion_catalogo, verificacion_notebook, verificacion_plausibilidad
+from . import bitacora, config, entrega, verificacion_catalogo, verificacion_notebook, verificacion_plausibilidad, visualization
 from . import notebook_builder as nb
 
 NOTEBOOKS = config.PROJECT_ROOT / "notebooks"
@@ -106,6 +106,8 @@ def ultima_edicion(anio: int) -> Path | None:
 
 PRIMER_NUMERO_A_MEDIDA = max(verificacion_catalogo.MANIFEST) + 1
 _ENCABEZADO_A_MEDIDA = re.compile(r"^###\s+(\d+)\.\s+\S")
+# `titulo="..."` o `title="..."` literales (también f-strings) en el código de una celda.
+_TITULO_LITERAL = re.compile(r"\bt(?:itulo|itle)\s*=\s*f?\"([^\"\n]*)\"")
 
 
 def _cargar_extras(ruta: Path | None) -> tuple[dict[int, list[nb.Celda]], list[nb.Celda], dict[int, str]]:
@@ -169,6 +171,15 @@ def _validar_celdas_a_medida(celdas: list, frases: dict[int, str]) -> list[str]:
             problemas.append(f"{etiqueta}: falta la pregunta guía («**¿Qué pregunta responde?**») en el markdown")
         if not re.search(r"viz\.plot_\w+\(", celda.codigo):
             problemas.append(f"{etiqueta}: falta la gráfica (una función viz.plot_...)")
+        # Mismo límite que los títulos del catálogo (test de clase de
+        # test_visualization.py): en la corrida real de 2024 el título de una
+        # celda a medida de 84 caracteres salió recortado por los dos lados.
+        for titulo in _TITULO_LITERAL.findall(celda.codigo):
+            if len(titulo) > visualization.LARGO_MAXIMO_TITULO:
+                problemas.append(
+                    f"{etiqueta}: el título «{titulo[:40]}…» tiene {len(titulo)} caracteres y el máximo "
+                    f"que entra en la figura es {visualization.LARGO_MAXIMO_TITULO}"
+                )
         if not verificacion_notebook.tiene_cita_con_fundamento(celda.markdown_final):
             problemas.append(f"{etiqueta}: la justificación (markdown_final) no cita a ningún autor de docs/BIBLIOGRAFIA.md")
         if numero not in frases:
@@ -253,7 +264,7 @@ def construir(
         raise InformeInvalido("El notebook se ejecutó pero tiene problemas:\n- " + "\n- ".join(problemas))
 
     cifras = nb.ruta_cifras(destino)
-    hallazgos = _revisar_plausibilidad(cifras)
+    hallazgos = _revisar_plausibilidad(cifras) + _revisar_categorias(cifras)
     if hallazgos:
         bitacora.registrar("verificacion_notebook_bloqueo", etapa="plausibilidad", hallazgos=hallazgos)
         raise InformeInvalido(
@@ -280,6 +291,17 @@ def _revisar_plausibilidad(ruta_cifras: Path) -> list[str]:
     cifras = json.loads(ruta_cifras.read_text(encoding="utf-8"))
     indicadores = verificacion_notebook.indicadores_para_plausibilidad(cifras)
     return [str(h) for h in verificacion_plausibilidad.revisar(indicadores)]
+
+
+def _revisar_categorias(ruta_cifras: Path) -> list[str]:
+    """Ninguna tabla del informe puede traer una categoría «No Definido»:
+    en la corrida real de 2024 la métrica 17 mostraba una barra «6-No
+    Definido» con el 43,7% de precariedad, que eran todos los hogares del
+    interior (el INE define el estrato solo para Montevideo)."""
+    if not ruta_cifras.exists():
+        return []
+    cifras = json.loads(ruta_cifras.read_text(encoding="utf-8"))
+    return verificacion_notebook.categorias_sin_definir(cifras)
 
 
 def _registrar_reejecucion_si_corresponde(anterior: Path | None, motivo: str | None) -> None:
@@ -377,16 +399,15 @@ MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
 
 
 def portada(anio: int) -> str:
-    """La portada del PDF: título, subtítulo que describe el contenido y
-    solo la fecha como pie. Es texto visible que no pasa por las celdas del
-    notebook, así que tiene su test."""
+    """La portada del PDF: el nombre de la encuesta con el año de los datos
+    y la fecha de generación, nada más (decisión del dueño, 2026-09-10: el
+    subtítulo que describía el contenido no aportaba). Es texto visible que
+    no pasa por las celdas del notebook, así que tiene su test."""
     hoy = dt.date.today()
     fecha = f"{hoy.day} de {MESES[hoy.month - 1]} de {hoy.year}"
     return f"""
 <div class="portada">
-  <h1>Encuesta Continua de Hogares {anio} &mdash; Informe</h1>
-  <div class="subtitulo">M&eacute;tricas calculadas sobre los microdatos del INE, con cada cifra
-  respaldada por los resultados de este informe</div>
+  <h1>Encuesta Continua de Hogares {anio}</h1>
   <div class="meta">Generado el {fecha}</div>
 </div>
 """
