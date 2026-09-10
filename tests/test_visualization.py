@@ -67,7 +67,7 @@ def test_plot_brecha_digital_por_cohorte_no_falla():
 def test_plot_brecha_digital_por_jefatura_no_falla():
     df = pd.DataFrame(
         {
-            "jefe_sexo": ["1-Hombre", "2-Mujer"],
+            "jefe_sexo": ["Hombre", "Mujer"],
             "tecnologia": ["Internet", "Internet"],
             "pct_penetracion": [80.0, 78.0],
         }
@@ -369,7 +369,7 @@ def test_plot_pct_por_por_departamento_es_horizontal_ordenada_y_marca_los_poco_c
     assert fig.layout.xaxis.range[0] == 0
     assert list(fig.data[0].marker.color) == [viz.COLOR_POCO_CONFIABLE, viz.COLOR_BASE, viz.COLOR_POCO_CONFIABLE]
     # Con pocas categorías sigue siendo vertical y de un solo color.
-    df = pd.DataFrame({"sexo_grupo": ["1-Hombre", "2-Mujer"], "pct": [1.9, 2.8]})
+    df = pd.DataFrame({"sexo_grupo": ["Hombre", "Mujer"], "pct": [1.9, 2.8]})
     fig = viz.plot_pct_por(df, "sexo_grupo", titulo="Victimización por sexo", xlabel="Sexo")
     assert fig.data[0].orientation == "v"
     assert list(fig.data[0].marker.color) == [viz.COLOR_BASE, viz.COLOR_BASE]

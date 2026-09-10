@@ -1036,7 +1036,7 @@ def _m28() -> Celda:
 def _m29() -> Celda:
     codigo = (
         'tasas_sexo = analysis.tasas_actividad_empleo_desempleo_por(empleo_prep, "sexo_grupo")\n'
-        'brecha_genero = analysis.brecha_por_grupo(tasas_sexo, "sexo_grupo", "1-Hombre", "2-Mujer")\n'
+        'brecha_genero = analysis.brecha_por_grupo(tasas_sexo, "sexo_grupo", "Hombre", "Mujer")\n'
         # print formateado, nunca la Series cruda: imprimir el objeto de
         # pandas mete "tasa_actividad 16.59 ... dtype: float64" en el
         # informe final - el ruido tecnico que prohibe METODOLOGIA.md
@@ -1638,8 +1638,8 @@ _RESUMEN_POR_METRICA: dict[int, str] = {
         '\'Según la generación de quien encabeza el hogar, el acceso a internet\')'),
     3: ('f"La conexión solo por celular alcanza al {_f(calidad_nivel_economico.loc[\'1-Bajo\', \'Solo móvil\'])}% de los hogares "'
         'f"del nivel económico bajo y al {_f(calidad_nivel_economico.loc[\'5-Alto\', \'Solo móvil\'])}% del alto"'),
-    4: ('f"Con jefatura masculina, el {_f(_v(brecha_jefatura, \'pct_penetracion\', jefe_sexo=\'1-Hombre\', tecnologia=\'Internet\'))}% de los hogares tiene internet; "'
-        'f"con jefatura femenina, el {_f(_v(brecha_jefatura, \'pct_penetracion\', jefe_sexo=\'2-Mujer\', tecnologia=\'Internet\'))}%"'),
+    4: ('f"Con jefatura masculina, el {_f(_v(brecha_jefatura, \'pct_penetracion\', jefe_sexo=\'Hombre\', tecnologia=\'Internet\'))}% de los hogares tiene internet; "'
+        'f"con jefatura femenina, el {_f(_v(brecha_jefatura, \'pct_penetracion\', jefe_sexo=\'Mujer\', tecnologia=\'Internet\'))}%"'),
     5: ('f"El índice de acceso digital (cantidad de tecnologías en el hogar) promedia "'
         'f"{_f(_v(indice_acceso_nivel, \'indice_promedio\', nivel_economico=\'1-Bajo\'), 2)} en el nivel económico bajo y "'
         'f"{_f(_v(indice_acceso_nivel, \'indice_promedio\', nivel_economico=\'5-Alto\'), 2)} en el alto"'),
@@ -1673,18 +1673,18 @@ _RESUMEN_POR_METRICA: dict[int, str] = {
     27: '_b(inseguridad_menores6, \'tiene_menores_6\', \'pct_inseguridad\', \'Según haya o no niños de 0 a 5 años en el hogar, la inseguridad alimentaria\')',
     28: ('f"La tasa de actividad promedio del año fue {_f(tasas_nacionales[\'tasa_actividad\'])}%, la de empleo {_f(tasas_nacionales[\'tasa_empleo\'])}% "'
          'f"y la de desempleo {_f(tasas_nacionales[\'tasa_desempleo\'])}%"'),
-    29: ('f"La tasa de empleo fue {_f(_v(tasas_sexo, \'tasa_empleo\', sexo_grupo=\'1-Hombre\'))}% entre los hombres y {_f(_v(tasas_sexo, \'tasa_empleo\', sexo_grupo=\'2-Mujer\'))}% entre las mujeres; "'
-         'f"el desempleo, {_f(_v(tasas_sexo, \'tasa_desempleo\', sexo_grupo=\'1-Hombre\'))}% y {_f(_v(tasas_sexo, \'tasa_desempleo\', sexo_grupo=\'2-Mujer\'))}%"'),
+    29: ('f"La tasa de empleo fue {_f(_v(tasas_sexo, \'tasa_empleo\', sexo_grupo=\'Hombre\'))}% entre los hombres y {_f(_v(tasas_sexo, \'tasa_empleo\', sexo_grupo=\'Mujer\'))}% entre las mujeres; "'
+         'f"el desempleo, {_f(_v(tasas_sexo, \'tasa_desempleo\', sexo_grupo=\'Hombre\'))}% y {_f(_v(tasas_sexo, \'tasa_desempleo\', sexo_grupo=\'Mujer\'))}%"'),
     30: '_b(desempleo_depto, \'departamento\', \'pct_promedio\', \'La tasa de desempleo por departamento\')',
-    31: 'f"La informalidad alcanza al {_f(_v(informalidad_sexo, \'pct_promedio\', sexo_grupo=\'1-Hombre\'))}% de los hombres ocupados y al {_f(_v(informalidad_sexo, \'pct_promedio\', sexo_grupo=\'2-Mujer\'))}% de las mujeres ocupadas"',
+    31: 'f"La informalidad alcanza al {_f(_v(informalidad_sexo, \'pct_promedio\', sexo_grupo=\'Hombre\'))}% de los hombres ocupados y al {_f(_v(informalidad_sexo, \'pct_promedio\', sexo_grupo=\'Mujer\'))}% de las mujeres ocupadas"',
     32: '_b(informalidad_educacion, \'nivel_educativo\', \'pct_promedio\', \'Según el nivel educativo, la informalidad\')',
-    33: 'f"El subempleo afecta al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'1-Hombre\'))}% de los hombres ocupados y al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'2-Mujer\'))}% de las mujeres ocupadas"',
+    33: 'f"El subempleo afecta al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'Hombre\'))}% de los hombres ocupados y al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'Mujer\'))}% de las mujeres ocupadas"',
     34: ('f"El desempleo juvenil (14 a 24 años) es de {_f(_v(tasas_edad_laboral, \'tasa_desempleo\', grupo_edad_laboral=\'Joven (14-24)\'))}%, "'
          'f"frente a {_f(_v(tasas_edad_laboral, \'tasa_desempleo\', grupo_edad_laboral=\'Resto\'))}% en el resto de la población activa"'),
     35: ('f"La proporción de asalariados (empleados) va de {_f(situacion_por_sector[\'Empleado\'].min())}% en el sector {_res.nombre_sector(situacion_por_sector[\'Empleado\'].idxmin())} "'
          'f"a {_f(situacion_por_sector[\'Empleado\'].max())}% en el sector {_res.nombre_sector(situacion_por_sector[\'Empleado\'].idxmax())}"'),
     36: '_b(prevalencia_delito, \'tipo_delito\', \'pct\', \'En el último mes, la proporción de personas víctimas de cada tipo de delito\')',
-    37: 'f"Fueron víctimas de algún delito en el último mes el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'1-Hombre\'))}% de los hombres y el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'2-Mujer\'))}% de las mujeres"',
+    37: 'f"Fueron víctimas de algún delito en el último mes el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'Hombre\'))}% de los hombres y el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'Mujer\'))}% de las mujeres"',
     # Los departamentos con menos de 30 víctimas no entran en la comparación
     # de extremos: con 0 casos sobre 694 personas el «0,0%» no es un dato.
     38: ('(_b(victimizacion_depto, \'departamento\', \'pct\', \'Por departamento, la victimización en el último mes\') '

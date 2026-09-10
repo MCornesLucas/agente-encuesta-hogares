@@ -602,7 +602,7 @@ def tasa_jefatura_femenina(tipo_hogar: pd.DataFrame) -> dict:
     """% ponderado de hogares cuyo jefe/a es mujer, sobre el total de
     hogares con jefatura identificada. Indicador estándar CEPAL/CELADE."""
     con_jefatura = tipo_hogar[tipo_hogar["jefe_sexo"].notna()].copy()
-    con_jefatura["_es_mujer"] = con_jefatura["jefe_sexo"] == "2-Mujer"
+    con_jefatura["_es_mujer"] = con_jefatura["jefe_sexo"] == "Mujer"
     total = int(len(con_jefatura))
     return {"pct_jefatura_femenina": pct_ponderado(con_jefatura, "_es_mujer"), "total_hogares": total}
 

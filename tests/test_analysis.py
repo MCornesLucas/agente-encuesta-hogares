@@ -353,14 +353,14 @@ def test_tasas_actividad_empleo_desempleo_por_desagrega_por_grupo():
     df = pd.DataFrame(
         {
             "mes": [1, 1, 1, 1, 1, 1],
-            "sexo_grupo": ["1-Hombre", "1-Hombre", "1-Hombre", "2-Mujer", "2-Mujer", "2-Mujer"],
+            "sexo_grupo": ["Hombre", "Hombre", "Hombre", "Mujer", "Mujer", "Mujer"],
             "condicion_actividad": ["Ocupados", "Desocupados", "Inactivos"] * 2,
             "ponderador_empleo": [70.0, 30.0, 100.0, 50.0, 50.0, 100.0],
         }
     )
     resumen = tasas_actividad_empleo_desempleo_por(df, "sexo_grupo").set_index("sexo_grupo")
-    assert resumen.loc["1-Hombre", "tasa_desempleo"] == 30.0
-    assert resumen.loc["2-Mujer", "tasa_desempleo"] == 50.0
+    assert resumen.loc["Hombre", "tasa_desempleo"] == 30.0
+    assert resumen.loc["Mujer", "tasa_desempleo"] == 50.0
 
 
 def test_tasas_actividad_empleo_desempleo_por_anio_ordena_y_deja_anio_numerico():
@@ -406,13 +406,13 @@ def test_combinar_por_anio_con_metrica_de_varias_series():
 def test_brecha_por_grupo_calcula_diferencia_en_puntos():
     resumen = pd.DataFrame(
         {
-            "sexo_grupo": ["1-Hombre", "2-Mujer"],
+            "sexo_grupo": ["Hombre", "Mujer"],
             "tasa_actividad": [73.0, 56.8],
             "tasa_empleo": [68.7, 51.6],
             "tasa_desempleo": [5.9, 9.3],
         }
     )
-    brecha = brecha_por_grupo(resumen, "sexo_grupo", "1-Hombre", "2-Mujer")
+    brecha = brecha_por_grupo(resumen, "sexo_grupo", "Hombre", "Mujer")
     assert brecha["tasa_actividad"] == 16.2
     assert round(brecha["tasa_desempleo"], 1) == -3.4
 
@@ -484,7 +484,7 @@ def test_pct_pobres_indigentes():
 def test_tasa_jefatura_femenina():
     df = pd.DataFrame(
         {
-            "jefe_sexo": ["1-Hombre", "2-Mujer", "2-Mujer", "1-Hombre", None],
+            "jefe_sexo": ["Hombre", "Mujer", "Mujer", "Hombre", None],
             "ponderador_hogar": [10.0, 10.0, 10.0, 70.0, 10.0],
         }
     )
@@ -580,7 +580,7 @@ def test_brecha_digital_por_cohorte():
 def test_brecha_digital_por_jefatura():
     df = pd.DataFrame(
         {
-            "jefe_sexo": ["1-Hombre", "1-Hombre", "2-Mujer"],
+            "jefe_sexo": ["Hombre", "Hombre", "Mujer"],
             "tiene_internet": [True, False, True],
             "tiene_pc": [True, True, True],
             "tiene_streaming": [False, False, True],
@@ -588,7 +588,7 @@ def test_brecha_digital_por_jefatura():
         }
     )
     resumen = brecha_digital_por_jefatura(df)
-    fila = resumen[(resumen["jefe_sexo"] == "1-Hombre") & (resumen["tecnologia"] == "Internet")]
+    fila = resumen[(resumen["jefe_sexo"] == "Hombre") & (resumen["tecnologia"] == "Internet")]
     assert fila["pct_penetracion"].iloc[0] == 50.0
 
 

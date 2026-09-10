@@ -10,6 +10,17 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.16.1] — 2026-09-10
+
+### Cambiado
+
+- **Las etiquetas de sexo son «Hombre» y «Mujer»**, sin el código del INE
+  pegado al nombre («1-Hombre», «2-Mujer») que salía en las gráficas por
+  sexo y en las leyendas (métricas 4, 29, 31, 33 y 37). Decisión del dueño
+  tras leer el PDF real de 2024. Las notas de prensa de la bibliografía y
+  el encabezado interno «Encuesta Continua de Hogares — Informe <año>»
+  quedan como estaban, también por decisión del dueño.
+
 ## [0.16.0] — 2026-09-10
 
 Revisión completa del PDF de la corrida real de 2024 (52 páginas, 44

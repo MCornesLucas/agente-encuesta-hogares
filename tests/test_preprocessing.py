@@ -29,7 +29,7 @@ def test_classify_nivel_economico():
 
 def test_classify_sexo():
     result = classify_sexo(pd.Series([1, 2, 9]))
-    assert list(result) == ["1-Hombre", "2-Mujer", "3-Otro"]
+    assert list(result) == ["Hombre", "Mujer", "Otro"]
 
 
 def test_classify_edad_grupo():
@@ -177,9 +177,9 @@ def test_clasificar_tipo_hogar_marca_monoparental():
 
 def test_clasificar_tipo_hogar_agrega_sexo_y_edad_del_jefe():
     resultado = clasificar_tipo_hogar(_personas_hogares_ejemplo(), _hogares_ponderador_ejemplo()).set_index("id_hogar")
-    assert resultado.loc[1, "jefe_sexo"] == "1-Hombre"
+    assert resultado.loc[1, "jefe_sexo"] == "Hombre"
     assert resultado.loc[1, "jefe_edad"] == 70
-    assert resultado.loc[3, "jefe_sexo"] == "2-Mujer"
+    assert resultado.loc[3, "jefe_sexo"] == "Mujer"
 
 
 def test_clasificar_tipo_hogar_agrega_ponderador():
@@ -288,7 +288,7 @@ def test_prepare_empleo_mapea_actividad_sexo_y_edad():
     assert resultado["condicion_actividad"].tolist() == ["Ocupados", "Desocupados", "Inactivos"]
     assert resultado["es_informal"].tolist() == [True, False, False]
     assert resultado["es_subempleo"].tolist() == [False, False, False]
-    assert resultado["sexo_grupo"].tolist() == ["1-Hombre", "2-Mujer", "1-Hombre"]
+    assert resultado["sexo_grupo"].tolist() == ["Hombre", "Mujer", "Hombre"]
     assert resultado["grupo_edad_laboral"].tolist() == ["Joven (14-24)", "Resto", "Joven (14-24)"]
 
 
@@ -354,7 +354,7 @@ def test_prepare_victimizacion_marca_victimizado_algun_delito():
         }
     )
     resultado = prepare_victimizacion(df)
-    assert resultado["sexo_grupo"].tolist() == ["1-Hombre", "2-Mujer"]
+    assert resultado["sexo_grupo"].tolist() == ["Hombre", "Mujer"]
     assert resultado["victimizado_algun_delito"].tolist() == [False, True]
 
 
@@ -362,7 +362,7 @@ def test_melt_delitos_arma_formato_largo_con_subpreguntas_correctas():
     df = pd.DataFrame(
         {
             "id_persona": [1],
-            "sexo_grupo": ["1-Hombre"],
+            "sexo_grupo": ["Hombre"],
             "departamento": ["MONTEVIDEO"],
             "ponderador_victimizacion": [100.0],
             "v3": [1], "v3_4": [1], "v3_6": [1], "v3_8": [2],
@@ -414,3 +414,15 @@ def test_clasificar_tipo_hogar_coincide_con_la_taxonomia_de_referencia_en_hogare
         assert resultado.loc[id_hogar, "tipo_hogar"] == _clasificar_tipo_hogar_codigos(codigos), id_hogar
         esperado_mono = bool((grupo.isin([3, 4, 5])).any() and not (grupo == 2).any())
         assert bool(resultado.loc[id_hogar, "monoparental"]) is esperado_mono, id_hogar
+
+
+def test_las_etiquetas_de_sexo_no_llevan_prefijo_numerico():
+    """Pedido del dueño (2026-09-10) tras leer el PDF real de 2024: las
+    gráficas por sexo decían «1-Hombre» y «2-Mujer», el código del INE
+    pegado al nombre. El orden no lo necesita (dos categorías) y en el
+    informe es ruido."""
+    from encuesta_hogares import config
+
+    for etiqueta in list(config.SEXO_LABELS.values()) + [config.SEXO_DEFAULT]:
+        assert etiqueta[0].isalpha(), etiqueta
+    assert list(classify_sexo(pd.Series([1, 2, 9]))) == ["Hombre", "Mujer", "Otro"]

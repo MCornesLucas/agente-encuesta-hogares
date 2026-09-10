@@ -274,8 +274,8 @@ NIVEL_ECONOMICO_LABELS = {
 }
 NIVEL_ECONOMICO_DEFAULT = "6-No Definido"
 
-SEXO_LABELS = {1: "1-Hombre", 2: "2-Mujer"}
-SEXO_DEFAULT = "3-Otro"
+SEXO_LABELS = {1: "Hombre", 2: "Mujer"}
+SEXO_DEFAULT = "Otro"
 
 EDAD_BINS = [0, 15, 65, float("inf")]
 EDAD_LABELS = ["1-Niños-Jovenes", "2-Adultos", "3-Adultos_mayores"]
