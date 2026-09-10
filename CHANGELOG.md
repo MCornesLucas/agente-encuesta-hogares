@@ -10,6 +10,21 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.6] — 2026-09-09
+
+### Corregido
+
+- **Las 42 descripciones del catálogo son preguntas.** La celda de cada
+  métrica las presenta como «¿Qué pregunta responde?», pero 29 estaban en
+  afirmativo ("compara el acceso...", "cuántos hogares son...") y en el
+  informe se leían como respuestas. Un test exige que toda descripción
+  empiece con «¿» y pregunte.
+- **Ningún encabezado queda vacío.** En Territorio, «Preparación de los
+  datos de este tema» no mostraba nada porque su celda calculaba el índice
+  sin dejar texto; ahora deja una nota con lo calculado, y la verificación
+  posterior a la ejecución rechaza cualquier encabezado sin contenido
+  visible debajo. Revisado el informe completo: era el único caso.
+
 ## [0.15.5] — 2026-09-09
 
 ### Corregido

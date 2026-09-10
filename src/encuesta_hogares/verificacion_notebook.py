@@ -297,8 +297,44 @@ def resumen_sin_texto(nb: dict) -> list[str]:
     return []
 
 
+def _salida_visible(celda: dict) -> bool:
+    if celda.get("cell_type") == "markdown":
+        return bool(_fuente(celda).strip())
+    return any(
+        s.get("output_type") in ("display_data", "execute_result", "stream") and (s.get("data") or s.get("text"))
+        for s in celda.get("outputs", []) or []
+    )
+
+
+def encabezados_sin_contenido(nb: dict) -> list[str]:
+    """Encabezados (celda de markdown que es solo un título) sin nada
+    visible debajo hasta el próximo encabezado. Visto por el dueño en una
+    corrida real: «Preparación de los datos de este tema» en Territorio
+    quedaba vacío en el informe sin código porque su celda calculaba pero
+    no mostraba nada. Se comprueba después de ejecutar, porque lo visible
+    de una celda de código son sus outputs."""
+    celdas = nb.get("cells", [])
+    problemas = []
+    for i, celda in enumerate(celdas):
+        if celda.get("cell_type") != "markdown":
+            continue
+        lineas = [linea for linea in _fuente(celda).strip().split("\n") if linea.strip()]
+        if not lineas or not lineas[0].startswith("#") or len(lineas) > 1:
+            continue
+        con_contenido = False
+        for siguiente in celdas[i + 1:]:
+            if siguiente.get("cell_type") == "markdown" and _fuente(siguiente).strip().startswith("#"):
+                break  # llegó el próximo encabezado sin nada visible en el medio
+            if _salida_visible(siguiente):
+                con_contenido = True
+                break
+        if not con_contenido:
+            problemas.append(f"celda {i}: el encabezado «{lineas[0][:60]}» no tiene contenido visible debajo")
+    return problemas
+
+
 def verificar_despues_de_ejecutar(nb: dict) -> list[str]:
-    return celdas_con_error(nb) + graficas_faltantes(nb) + resumen_sin_texto(nb)
+    return celdas_con_error(nb) + graficas_faltantes(nb) + resumen_sin_texto(nb) + encabezados_sin_contenido(nb)
 
 
 # ---------------------------------------------------------------------------

@@ -818,7 +818,13 @@ _COMPONENTES_TERRITORIO = (
     ")\n"
     'indice_territorial = analysis.indice_desarrollo_territorial(\n'
     '    componentes_territorio, invertir=["Pobreza", "Precariedad de vivienda"]\n'
-    ")"
+    ")\n"
+    # Sin esta nota, el encabezado "Preparación de los datos de este tema"
+    # quedaba vacío en el informe sin código (visto por el dueño en una
+    # corrida real): la celda calcula pero no muestra nada.
+    'nota(f"Índice de desarrollo territorial calculado para {len(indice_territorial)} departamentos a partir de "\n'
+    '     "cuatro componentes: pobreza, precariedad de vivienda, empleo y nivel económico "\n'
+    '     "(los dos primeros invertidos, para que un valor más alto sea siempre mejor).")'
 )
 
 

@@ -444,3 +444,24 @@ def test_construir_escribe_en_ediciones_y_registra_la_reejecucion_del_mismo_anio
     assert ("reejecucion_notebook", {"motivo": "prueba", "notebook": "Informe_ECH_2025_20260909-1000.ipynb"}) in registros
     escritos = sorted(p.name for p in (tmp_path / "ediciones").glob("Informe_ECH_2025_*.ipynb"))
     assert len(escritos) == 2 and all(n.startswith("Informe_ECH_2025_") for n in escritos), "la edición nueva no pisa la anterior"
+
+
+def test_un_encabezado_sin_contenido_visible_se_detecta_despues_de_ejecutar():
+    imagen = [{"output_type": "display_data", "data": {"image/png": "..."}, "metadata": {}}]
+    nota = [{"output_type": "display_data", "data": {"text/markdown": "Índice calculado."}, "metadata": {}}]
+    salto = chr(10)
+    con_contenido = {"cells": [
+        _celda_md("## Territorio" + salto + salto + "Qué mide este tema."),   # el propio encabezado trae texto
+        _celda_md("### Preparación de los datos de este tema"),
+        _celda_code("indice = analysis.x()" + salto + "nota('...')", nota),   # deja una nota visible
+        _celda_md("### 13. Índice"), _celda_code("fig = viz.plot_a(df)" + salto + "fig.show()", imagen),
+    ]}
+    assert vn.encabezados_sin_contenido(con_contenido) == []
+    vacio = {"cells": [
+        _celda_md("### Preparación de los datos de este tema"),
+        _celda_code("indice = analysis.x()", []),                            # calcula pero no muestra nada
+        _celda_md("### 13. Índice"), _celda_code("fig = viz.plot_a(df)" + salto + "fig.show()", imagen),
+    ]}
+    problemas = vn.encabezados_sin_contenido(vacio)
+    assert len(problemas) == 1 and "Preparación de los datos" in problemas[0]
+    assert problemas[0] in vn.verificar_despues_de_ejecutar(vacio)

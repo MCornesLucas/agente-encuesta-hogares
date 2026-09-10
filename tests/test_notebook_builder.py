@@ -650,3 +650,26 @@ def test_ninguna_celda_del_catalogo_imprime_por_consola():
     assert "def nota(" in nb._CABECERA
     # Ningún separador de miles a la inglesa en el texto que se muestra.
     assert not any(":,}" in c.codigo for c in celdas)
+
+
+def test_toda_preparacion_de_tema_deja_texto_visible():
+    """Visto por el dueño en una corrida real: en Territorio, el encabezado
+    "Preparación de los datos de este tema" quedaba vacío en el informe sin
+    código, porque la celda calculaba el índice pero no mostraba nada. Toda
+    celda con ese encabezado tiene que dejar una nota visible."""
+    for celda in (nb.celda_preparacion_empleo(2025), nb.celda_preparacion_seguridad(2025), nb.celda_preparacion_territorio()):
+        assert celda.markdown == "### Preparación de los datos de este tema"
+        assert "nota(" in celda.codigo, celda.markdown
+
+
+def test_toda_descripcion_del_catalogo_es_una_pregunta():
+    """Regla del dueño (2026-09-09): la celda de cada métrica presenta la
+    descripción como «¿Qué pregunta responde?», así que el texto tiene que
+    ser una pregunta — 30 de las 42 estaban en afirmativo ("compara el
+    acceso...", "cuántos hogares son...") y en el informe se leían como
+    respuestas. Se admite una frase aclaratoria después de la pregunta."""
+    afirmativas = [
+        (numero, descripcion) for numero, (_titulo, descripcion) in sorted(nb._TEXTO_CATALOGO.items())
+        if not (descripcion.strip().startswith("¿") and "?" in descripcion)
+    ]
+    assert afirmativas == [], afirmativas

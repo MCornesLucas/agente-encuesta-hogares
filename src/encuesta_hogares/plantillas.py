@@ -172,32 +172,32 @@ function salirDelFlujo() {
 # incluye por defecto, todos son opt-in (ver plantilla_areas).
 _CATEGORIAS_METRICAS = {
     "brecha_digital": ("1 · Brecha Digital", "", [
-        (1, "Brecha digital por nivel económico", "compara, en una sola gráfica, el acceso a internet, computadora y streaming según el nivel económico del hogar."),
+        (1, "Brecha digital por nivel económico", "¿cómo cambia el acceso a internet, computadora y streaming según el nivel económico del hogar?"),
         (2, "Brecha digital por cohorte generacional", "¿los hogares encabezados por las generaciones más jóvenes están más conectados que los de las generaciones mayores?"),
         (3, "Calidad de la conexión a internet por nivel económico", "¿los hogares de menos ingresos acceden a internet en las mismas condiciones que los de más, o dependen del celular como única vía de conexión?"),
-        (4, "Brecha digital según jefatura de hogar", "compara el acceso a cada tecnología entre hogares con jefe hombre y jefa mujer."),
+        (4, "Brecha digital según jefatura de hogar", "¿acceden a cada tecnología en la misma proporción los hogares con jefe hombre y los hogares con jefa mujer?"),
         (5, "Índice de acceso digital por nivel económico", "¿el acceso digital se reparte parejo entre niveles económicos, o las tecnologías se acumulan en los hogares de más ingresos?"),
-        (6, "Adopción de tablets del Plan Ibirapitá", "en hogares con jefe/a de 65 años o más, qué porcentaje tiene una tablet de este programa estatal de inclusión digital."),
+        (6, "Adopción de tablets del Plan Ibirapitá", "¿qué porcentaje de los hogares con jefe o jefa de 65 años o más tiene una tablet del Plan Ibirapitá, el programa estatal de inclusión digital?"),
     ]),
     "hogares": ("2 · Hogares", "", [
         (7, "Cuántos hogares son pobres o indigentes en Montevideo", "¿qué porcentaje de los hogares de Montevideo está en situación de pobreza, y cuántos de esos llegan a la indigencia? El punto de partida para leer el resto del informe."),
         (8, "Jefatura de hogar femenina", "¿qué porcentaje de los hogares del país tiene una jefa mujer? Se calcula sobre los hogares con jefatura identificada."),
         (9, "Hacinamiento", "¿qué porcentaje de los hogares de Montevideo vive hacinado, y eso cambia según el nivel económico?"),
-        (10, "Tipos de hogar", "cuántos hogares son unipersonales, nucleares, extendidos, compuestos o sin núcleo."),
+        (10, "Tipos de hogar", "¿qué proporción de los hogares es unipersonal, nuclear, extendida, compuesta o sin núcleo?"),
         (11, "Razón de dependencia demográfica", "¿qué departamentos cargan con más población dependiente en relación con su población en edad de trabajar?"),
-        (12, "Hogares unipersonales de adultos mayores", "de los hogares de una sola persona, qué porcentaje corresponde a alguien de 65 años o más."),
+        (12, "Hogares unipersonales de adultos mayores", "¿qué porcentaje de los hogares de una sola persona corresponde a alguien de 65 años o más?"),
     ]),
     "territorio": ("3 · Territorio", "", [
         (13, "Índice de desarrollo territorial por departamento", "¿cómo se ordenan los 19 departamentos cuando el desarrollo se mira en su conjunto, y cuáles quedan arriba y abajo?"),
         (14, "Perfil territorial por departamento", "¿qué explica la posición de cada departamento en el índice: cuál de sus componentes lo empuja hacia arriba o hacia abajo?"),
-        (15, "Brecha territorial entre el departamento mejor y peor posicionado", "cuánto separa, en el índice, al departamento con mejor puntaje del que tiene el peor."),
+        (15, "Brecha territorial entre el departamento mejor y peor posicionado", "¿cuánto separa, en el índice, al departamento con mejor puntaje del que tiene el peor?"),
     ]),
     "vivienda": ("4 · Vivienda", "", [
-        (16, "Precariedad estructural de la vivienda", "qué porcentaje de hogares tiene al menos un problema estructural (humedad, goteras, grietas, etc.)."),
-        (17, "Precariedad estructural según nivel económico", "si los hogares de nivel económico más bajo tienen más problemas estructurales."),
-        (18, "Precariedad estructural por departamento", "en qué departamentos hay más y menos problemas estructurales de vivienda."),
-        (19, "Brecha de precariedad entre el nivel económico más bajo y el más alto", "cuántos puntos porcentuales de precariedad de vivienda separan a los hogares de nivel económico más bajo de los de nivel más alto."),
-        (20, "Carencias estructurales más frecuentes", "cuál es el problema de vivienda más común a nivel nacional, y cuáles le siguen."),
+        (16, "Precariedad estructural de la vivienda", "¿qué porcentaje de hogares tiene al menos un problema estructural en su vivienda (humedad, goteras, grietas, etc.)?"),
+        (17, "Precariedad estructural según nivel económico", "¿tienen más problemas estructurales de vivienda los hogares de nivel económico más bajo?"),
+        (18, "Precariedad estructural por departamento", "¿en qué departamentos hay más y menos problemas estructurales de vivienda?"),
+        (19, "Brecha de precariedad entre el nivel económico más bajo y el más alto", "¿cuántos puntos porcentuales de precariedad de vivienda separan a los hogares de nivel económico más bajo de los de nivel más alto?"),
+        (20, "Carencias estructurales más frecuentes", "¿cuál es el problema de vivienda más común a nivel nacional, y cuáles le siguen?"),
     ]),
 }
 
@@ -208,13 +208,13 @@ _CATEGORIAS_METRICAS = {
 _CATEGORIA_FIES = ("5 · Seguridad alimentaria (submuestra de hogares)",
     "Se calcula sobre una submuestra de hogares, no sobre todos los encuestados.",
     [
-    (21, "Prevalencia de inseguridad alimentaria", "qué porcentaje de hogares está en inseguridad alimentaria moderada o severa, y cuántos en severa."),
-    (22, "Inseguridad alimentaria por quintil de ingreso", "cómo varía entre el 20% de hogares con menos ingreso y el 20% con más."),
-    (23, "Inseguridad alimentaria por región", "Montevideo comparado con el resto del país."),
-    (24, "Diferencia entre el quintil más pobre y el más rico", "cuántos puntos porcentuales de inseguridad alimentaria separan al 20% de hogares con menos ingreso del 20% con más."),
-    (25, "Inseguridad alimentaria severa por quintil de ingreso", "cómo varía la inseguridad alimentaria severa —el caso más grave— entre el 20% de hogares con menos ingreso y el 20% con más."),
-    (26, "Inseguridad alimentaria en hogares con menores de 18 años", "compara hogares con y sin menores de edad."),
-    (27, "Inseguridad alimentaria en hogares con niños de 0 a 5 años", "compara los hogares que tienen al menos un niño de 0 a 5 años con los que no, para ver si la primera infancia está más expuesta."),
+    (21, "Prevalencia de inseguridad alimentaria", "¿qué porcentaje de hogares está en inseguridad alimentaria moderada o severa, y cuántos en severa?"),
+    (22, "Inseguridad alimentaria por quintil de ingreso", "¿cómo varía la inseguridad alimentaria entre el 20% de hogares con menos ingreso y el 20% con más?"),
+    (23, "Inseguridad alimentaria por región", "¿es distinta la inseguridad alimentaria en Montevideo y en el resto del país?"),
+    (24, "Diferencia entre el quintil más pobre y el más rico", "¿cuántos puntos porcentuales de inseguridad alimentaria separan al 20% de hogares con menos ingreso del 20% con más?"),
+    (25, "Inseguridad alimentaria severa por quintil de ingreso", "¿cómo varía la inseguridad alimentaria severa —el caso más grave— entre el 20% de hogares con menos ingreso y el 20% con más?"),
+    (26, "Inseguridad alimentaria en hogares con menores de 18 años", "¿es mayor la inseguridad alimentaria en los hogares con menores de 18 años que en los que no los tienen?"),
+    (27, "Inseguridad alimentaria en hogares con niños de 0 a 5 años", "¿es mayor la inseguridad alimentaria en los hogares con al menos un niño de 0 a 5 años que en los que no los tienen, es decir, está más expuesta la primera infancia?"),
 ])
 
 # Igual que _CATEGORIA_FIES: solo existe para los años que tienen los 12
@@ -230,13 +230,13 @@ _CATEGORIA_EMPLEO = ("6 · Empleo",
     "una foto de un mes suelto ni una medición única de todo el año.",
     [
     (28, "Tasas de actividad, empleo y desempleo", "¿qué parte de la población está trabajando, buscando trabajo, o fuera del mercado laboral? Las tres tasas que resumen el año."),
-    (29, "Brecha de género en el mercado laboral", "compara las tasas de actividad, empleo y desempleo entre hombres y mujeres."),
-    (30, "Desempleo por departamento", "en qué departamentos la tasa de desempleo es más alta o más baja."),
-    (31, "Informalidad laboral por sexo", "qué porcentaje de ocupados no aporta a la seguridad social, comparando hombres y mujeres."),
-    (32, "Informalidad laboral por nivel educativo", "qué porcentaje de ocupados no aporta a la seguridad social, según su nivel educativo."),
-    (33, "Subempleo por sexo", "qué porcentaje de ocupados querría trabajar más horas de las que tiene, comparando hombres y mujeres."),
-    (34, "Desempleo juvenil (14 a 24 años) comparado con el resto", "si los jóvenes tienen una tasa de desempleo distinta al resto de la población activa."),
-    (35, "Situación ocupacional por sector formal/informal", "si son más los empleados, cuentapropistas o empleadores en cada sector."),
+    (29, "Brecha de género en el mercado laboral", "¿difieren las tasas de actividad, empleo y desempleo entre hombres y mujeres, y cuánto?"),
+    (30, "Desempleo por departamento", "¿en qué departamentos la tasa de desempleo es más alta y en cuáles más baja?"),
+    (31, "Informalidad laboral por sexo", "¿qué porcentaje de los ocupados no aporta a la seguridad social, y difiere entre hombres y mujeres?"),
+    (32, "Informalidad laboral por nivel educativo", "¿cómo varía la informalidad laboral según el nivel educativo de los ocupados?"),
+    (33, "Subempleo por sexo", "¿qué porcentaje de los ocupados querría trabajar más horas de las que tiene, y difiere entre hombres y mujeres?"),
+    (34, "Desempleo juvenil (14 a 24 años) comparado con el resto", "¿tienen los jóvenes de 14 a 24 años una tasa de desempleo distinta a la del resto de la población activa?"),
+    (35, "Situación ocupacional por sector formal/informal", "¿predominan los empleados, los cuentapropistas o los empleadores en cada sector, formal e informal?"),
 ])
 
 # Igual que _CATEGORIA_EMPLEO: solo se ofrece si el usuario la eligió en
@@ -252,10 +252,10 @@ _CATEGORIA_SEGURIDAD = ("7 · Seguridad y victimización",
     (36, "Prevalencia de victimización por tipo de delito", "¿qué delito es el más frecuente, y a qué porcentaje de personas le tocó sufrirlo?"),
     (37, "Victimización general por sexo", "¿hombres y mujeres sufren delitos en la misma proporción?"),
     (38, "Victimización general por departamento", "¿en qué departamentos es más frecuente haber sufrido al menos un delito, y en cuáles menos?"),
-    (39, "Tasa de comunicación a la policía por tipo de delito", "de quienes fueron víctimas, cuántos avisaron a la policía de algún modo."),
-    (40, "Tasa de denuncia formal por tipo de delito", "de quienes fueron víctimas, ¿cuántos llegaron a formalizar la denuncia?"),
-    (41, "Brecha entre comunicación informal y denuncia formal", "cuántos avisan a la policía pero no llegan a denunciar formalmente — la \"cifra negra\"."),
-    (42, "Casos con violencia por tipo de delito", "de quienes fueron víctimas, en cuántos casos los autores amenazaron o ejercieron violencia."),
+    (39, "Tasa de comunicación a la policía por tipo de delito", "¿qué porcentaje de las víctimas avisó a la policía de algún modo, según el tipo de delito?"),
+    (40, "Tasa de denuncia formal por tipo de delito", "¿qué porcentaje de las víctimas llegó a formalizar la denuncia, según el tipo de delito?"),
+    (41, "Brecha entre comunicación informal y denuncia formal", "¿cuántas víctimas avisan a la policía pero no llegan a denunciar formalmente —la \"cifra negra\"—, según el tipo de delito?"),
+    (42, "Casos con violencia por tipo de delito", "¿en qué proporción de los casos los autores amenazaron o ejercieron violencia, según el tipo de delito?"),
 ])
 
 
