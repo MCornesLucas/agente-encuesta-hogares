@@ -10,6 +10,17 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.4] — 2026-09-09
+
+### Corregido
+
+- `run_python.bat` fija la salida de Python en UTF-8. En una corrida real,
+  una herramienta imprimió un nombre de columna de los datos del INE con un
+  carácter que la consola de Windows (cp1252) no puede representar y falló
+  con `UnicodeEncodeError` en medio del flujo; el agente lo sorteó, pero
+  costó dos minutos. Con el envoltorio fijando la codificación, no vuelve a
+  pasar en ninguna herramienta.
+
 ## [0.15.3] — 2026-09-09
 
 ### Corregido
