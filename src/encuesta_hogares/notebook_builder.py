@@ -162,14 +162,14 @@ with bitacora.medir("carga_de_datos"):
     hogares_mdeo_hacinamiento = preprocessing.compute_hacinamiento(hogares_mdeo)
     personas_con_depto = preprocessing.merge_personas(hogares, personas){fies_extra}
 
-print(f"Hogares en todo el país: {{len(hogares):,}}")
-print(f"Hogares de Montevideo: {{len(hogares_mdeo):,}}")'''
+nota(f"Hogares en todo el país: {{_res.fmt(len(hogares), 0)}}",
+     f"Hogares de Montevideo: {{_res.fmt(len(hogares_mdeo), 0)}}")'''
     if incluir_empleo:
         codigo += '''
 
 with bitacora.medir("carga_de_datos_empleo"):
     empleo_prep = preprocessing.prepare_empleo(data_loader.load_empleo(ANIO))
-print(f"Registros de Empleo (12 meses): {len(empleo_prep):,}")'''
+nota(f"Registros de Empleo (12 meses): {_res.fmt(len(empleo_prep), 0)}")'''
     return Celda(markdown=markdown, codigo=codigo)
 
 
@@ -184,7 +184,7 @@ activos = empleo_prep[empleo_prep["condicion_actividad"].isin(["Ocupados", "Deso
 activos["es_desocupado"] = activos["condicion_actividad"] == "Desocupados"
 
 meses_cubiertos = sorted(int(m) for m in empleo_prep["mes"].unique())
-print(f"Meses de Empleo cubiertos: {len(meses_cubiertos)}")'''
+nota(f"Meses de Empleo cubiertos: {len(meses_cubiertos)}")'''
     # `###`, no `##`: cuelga del "## Empleo" que abre el tema, igual que las
     # métricas. Y sin repetir "Empleo" en el título, que ya está arriba.
     return Celda(markdown="### Preparación de los datos de este tema", codigo=codigo)
@@ -197,7 +197,7 @@ def celda_preparacion_seguridad(anio_base: int) -> Celda:
     victimizacion_largo = preprocessing.melt_delitos(victimizacion_prep)
     victimizados = victimizacion_largo[victimizacion_largo["victimizado"]]
 
-print(f"Personas x tipo de delito: {len(victimizacion_largo):,}")'''
+nota(f"Personas por tipo de delito: {_res.fmt(len(victimizacion_largo), 0)}")'''
     return Celda(markdown="### Preparación de los datos de este tema", codigo=codigo)
 
 
@@ -735,9 +735,8 @@ def _m9() -> Celda:
     codigo = (
         'chicos_hacinamiento_nivel = analysis.grupos_con_muestra_chica(hogares_mdeo_hacinamiento, "nivel_economico")\n'
         "if len(chicos_hacinamiento_nivel):\n"
-        '    print("Niveles económicos con menos de 30 casos en la muestra (estimación poco confiable):")\n'
-        "    for nivel, n in chicos_hacinamiento_nivel.items():\n"
-        '        print(f"  {nivel}: {n} casos")\n\n'
+        '    nota("Niveles económicos con menos de 30 casos en la muestra (estimación poco confiable): "\n'
+        '         + ", ".join(f"{nivel} ({n} casos)" for nivel, n in chicos_hacinamiento_nivel.items()))\n\n'
         'hacinamiento_nivel = analysis.pct_hacinamiento_por(hogares_mdeo_hacinamiento, "nivel_economico")\n'
         'fig = viz.plot_hacinamiento_por(hacinamiento_nivel, "nivel económico")\nfig.show()'
     )
@@ -756,9 +755,8 @@ def _m11() -> Celda:
     codigo = (
         'chicos_depto_dependencia = analysis.grupos_con_muestra_chica(personas_con_depto, "departamento")\n'
         "if len(chicos_depto_dependencia):\n"
-        '    print("Departamentos con menos de 30 casos en la muestra (estimación poco confiable):")\n'
-        "    for depto, n in chicos_depto_dependencia.items():\n"
-        '        print(f"  {depto}: {n} casos")\n\n'
+        '    nota("Departamentos con menos de 30 casos en la muestra (estimación poco confiable): "\n'
+        '         + ", ".join(f"{depto} ({n} casos)" for depto, n in chicos_depto_dependencia.items()))\n\n'
         'dependencia_depto = analysis.razon_dependencia_por(personas_con_depto, "departamento")\n'
         'fig = viz.plot_razon_dependencia_por(dependencia_depto, "departamento")\nfig.show()'
     )
@@ -845,8 +843,8 @@ def _m15() -> Celda:
         'mejor_depto = indice_territorial.index[0]\n'
         'peor_depto = indice_territorial.index[-1]\n'
         'brecha_territorial = indice_territorial.loc[mejor_depto, "indice"] - indice_territorial.loc[peor_depto, "indice"]\n'
-        'print(f"Brecha territorial: {mejor_depto} ({indice_territorial.loc[mejor_depto, \'indice\']:.2f}) vs. '
-        '{peor_depto} ({indice_territorial.loc[peor_depto, \'indice\']:.2f}) — diferencia de {brecha_territorial:.2f}")\n\n'
+        'nota(f"Brecha territorial: {mejor_depto} ({_res.fmt(indice_territorial.loc[mejor_depto, \'indice\'], 2)}) frente a '
+        '{peor_depto} ({_res.fmt(indice_territorial.loc[peor_depto, \'indice\'], 2)}) — diferencia de {_res.fmt(brecha_territorial, 2)}")\n\n'
         "fig = viz.plot_dumbbell(\n"
         '    categorias=["Índice de desarrollo territorial"],\n'
         '    valores_a=[indice_territorial.loc[mejor_depto, "indice"]],\n'
@@ -888,7 +886,7 @@ def _m19() -> Celda:
         'brecha_precariedad = analysis.diferencia_entre_categorias(\n'
         '    precariedad_nivel, "nivel_economico", "1-Bajo", "5-Alto", "pct_precariedad"\n'
         ")\n"
-        'print(f"Diferencia 1-Bajo menos 5-Alto: {brecha_precariedad:.2f} puntos porcentuales")\n\n'
+        'nota(f"Diferencia entre el nivel económico bajo y el alto: {_res.fmt(brecha_precariedad, 2)} puntos porcentuales")\n\n'
         'fila_bajo = precariedad_nivel.set_index("nivel_economico").loc["1-Bajo", "pct_precariedad"]\n'
         'fila_alto = precariedad_nivel.set_index("nivel_economico").loc["5-Alto", "pct_precariedad"]\n'
         "fig = viz.plot_dumbbell(\n"
@@ -921,9 +919,8 @@ def _m22() -> Celda:
     codigo = (
         'chicos_quintil = analysis.grupos_con_muestra_chica(fies_clasificado, "quintil_ingreso")\n'
         "if len(chicos_quintil):\n"
-        '    print("Quintiles con menos de 30 casos en la muestra (estimación poco confiable):")\n'
-        "    for quintil, n in chicos_quintil.items():\n"
-        '        print(f"  {quintil}: {n} casos")\n\n'
+        '    nota("Quintiles con menos de 30 casos en la muestra (estimación poco confiable): "\n'
+        '         + ", ".join(f"{quintil} ({n} casos)" for quintil, n in chicos_quintil.items()))\n\n'
         'inseguridad_quintil = analysis.inseguridad_alimentaria_por(fies_clasificado, "quintil_ingreso")\n'
         "fig = viz.plot_inseguridad_alimentaria_por(\n"
         '    inseguridad_quintil, "quintil_ingreso",\n'
@@ -950,7 +947,7 @@ def _m24() -> Celda:
         "diferencia_quintiles = analysis.diferencia_entre_categorias(\n"
         '    inseguridad_quintil, "quintil_ingreso", "Quintil 1", "Quintil 5", "pct_inseguridad"\n'
         ")\n"
-        'print(f"Diferencia Quintil 1 menos Quintil 5: {diferencia_quintiles:.2f} puntos porcentuales")\n\n'
+        'nota(f"Diferencia entre el quintil 1 y el quintil 5: {_res.fmt(diferencia_quintiles, 2)} puntos porcentuales")\n\n'
         'fila_q1 = inseguridad_quintil.set_index("quintil_ingreso").loc["Quintil 1", "pct_inseguridad"]\n'
         'fila_q5 = inseguridad_quintil.set_index("quintil_ingreso").loc["Quintil 5", "pct_inseguridad"]\n'
         "fig = viz.plot_dumbbell(\n"
@@ -1025,10 +1022,10 @@ def _m29() -> Celda:
         # informe final - el ruido tecnico que prohibe METODOLOGIA.md
         # seccion 3. Encontrado por el agente en una corrida real de 2023
         # (lo parcho a mano y costo re-ejecutar el notebook entero).
-        'print("Brecha de género (hombre menos mujer, en puntos porcentuales): "\n'
-        '      f"actividad {brecha_genero[\'tasa_actividad\']:+.2f} · "\n'
-        '      f"empleo {brecha_genero[\'tasa_empleo\']:+.2f} · "\n'
-        '      f"desempleo {brecha_genero[\'tasa_desempleo\']:+.2f}")\n\n'
+        'nota("Brecha de género (hombre menos mujer, en puntos porcentuales): "\n'
+        '     f"actividad {_res.fmt_signo(brecha_genero[\'tasa_actividad\'], 2)} · "\n'
+        '     f"empleo {_res.fmt_signo(brecha_genero[\'tasa_empleo\'], 2)} · "\n'
+        '     f"desempleo {_res.fmt_signo(brecha_genero[\'tasa_desempleo\'], 2)}")\n\n'
         'fig = viz.plot_tasas_por_grupo(tasas_sexo, "sexo_grupo", "Tasas de actividad, empleo y desempleo por sexo")\n'
         "fig.show()"
     )
@@ -1076,10 +1073,10 @@ def _m34() -> Celda:
         'tasas_edad_laboral = analysis.tasas_actividad_empleo_desempleo_por(empleo_prep, "grupo_edad_laboral")\n'
         'brecha_edad = analysis.brecha_por_grupo(tasas_edad_laboral, "grupo_edad_laboral", "Joven (14-24)", "Resto")\n'
         # Mismo criterio que _m29: nunca imprimir la Series cruda.
-        'print("Brecha juvenil (jóvenes menos resto, en puntos porcentuales): "\n'
-        '      f"actividad {brecha_edad[\'tasa_actividad\']:+.2f} · "\n'
-        '      f"empleo {brecha_edad[\'tasa_empleo\']:+.2f} · "\n'
-        '      f"desempleo {brecha_edad[\'tasa_desempleo\']:+.2f}")\n\n'
+        'nota("Brecha juvenil (jóvenes menos resto, en puntos porcentuales): "\n'
+        '     f"actividad {_res.fmt_signo(brecha_edad[\'tasa_actividad\'], 2)} · "\n'
+        '     f"empleo {_res.fmt_signo(brecha_edad[\'tasa_empleo\'], 2)} · "\n'
+        '     f"desempleo {_res.fmt_signo(brecha_edad[\'tasa_desempleo\'], 2)}")\n\n'
         'fig = viz.plot_tasas_por_grupo(\n'
         '    tasas_edad_laboral, "grupo_edad_laboral",\n'
         '    "Tasas de actividad, empleo y desempleo: jóvenes vs. resto",\n'
@@ -1258,10 +1255,10 @@ def celdas_intro_brecha_digital() -> list[Celda]:
         markdown="### Panorama general de conectividad en Montevideo",
         codigo=(
             "resumen_conectividad_mdeo = analysis.resumen_conectividad(hogares_ext)\n"
-            'print(f"Hogares con internet: {resumen_conectividad_mdeo.hogares_con_internet:,} '
-            '({resumen_conectividad_mdeo.pct_con_internet}%)")\n'
-            'print(f"Hogares sin internet: {resumen_conectividad_mdeo.hogares_sin_internet:,} '
-            '({resumen_conectividad_mdeo.pct_sin_internet}%)")\n\n'
+            'nota(f"Hogares con internet: {_res.fmt(resumen_conectividad_mdeo.hogares_con_internet, 0)} '
+            '({_res.fmt(resumen_conectividad_mdeo.pct_con_internet)}%)",\n'
+            '     f"Hogares sin internet: {_res.fmt(resumen_conectividad_mdeo.hogares_sin_internet, 0)} '
+            '({_res.fmt(resumen_conectividad_mdeo.pct_sin_internet)}%)")\n\n'
             "fig = viz.plot_distribucion_conectividad(resumen_conectividad_mdeo)\nfig.show()"
         ),
     )
@@ -1284,8 +1281,18 @@ import kaleido
 import pandas as pd
 import plotly.io as pio
 
+from IPython.display import Markdown as _Markdown, display as _display
+
 from encuesta_hogares import analysis, bitacora, config, data_loader, entrega, preprocessing
+from encuesta_hogares import resumen as _res
 from encuesta_hogares import visualization as viz
+
+
+def nota(*lineas):
+    """Texto breve bajo una celda, con el formato del informe (markdown) y no
+    como salida cruda de consola. Cada argumento es una línea."""
+    _display(_Markdown("  \\n".join(str(linea) for linea in lineas)))
+
 
 pio.renderers.default = "png"
 # Un solo Chromium para todas las gráficas: sin esto, kaleido 1.x lanza uno

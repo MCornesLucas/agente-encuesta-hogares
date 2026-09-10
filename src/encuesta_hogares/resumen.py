@@ -35,6 +35,12 @@ def fmt(valor, decimales: int = 1) -> str:
     return texto.replace(",", "|").replace(".", ",").replace("|", ".")
 
 
+def fmt_signo(valor, decimales: int = 1) -> str:
+    """Como `fmt`, con el signo siempre explícito: «+16,9», «−2,2»."""
+    texto = fmt(abs(float(valor)), decimales)
+    return ("−" if float(valor) < 0 else "+") + texto
+
+
 def valor(tabla: pd.DataFrame, columna_valor: str, **filtros) -> float:
     """El valor de `columna_valor` en la única fila que cumple `filtros`
     (`valor(df, "pct", nivel_economico="1-Bajo")`). Falla con un mensaje

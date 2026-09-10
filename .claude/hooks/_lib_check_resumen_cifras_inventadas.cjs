@@ -23,8 +23,10 @@ function textoDeOutputs(cell) {
   let texto = "";
   for (const out of cell.outputs || []) {
     if (out.text) texto += Array.isArray(out.text) ? out.text.join("") : out.text;
-    const plano = out.data && out.data["text/plain"];
-    if (plano) texto += Array.isArray(plano) ? plano.join("") : plano;
+    for (const clave of ["text/plain", "text/markdown"]) {
+      const contenido = out.data && out.data[clave];
+      if (contenido) texto += Array.isArray(contenido) ? contenido.join("") : contenido;
+    }
   }
   return texto;
 }

@@ -455,7 +455,7 @@ def test_ningun_print_interpola_un_resultado_de_analysis_sin_formato():
             es_print = (
                 isinstance(nodo, ast.Call)
                 and isinstance(nodo.func, ast.Name)
-                and nodo.func.id == "print"
+                and nodo.func.id in ("print", "nota")
             )
             if not es_print:
                 continue
@@ -631,3 +631,22 @@ def test_el_indice_territorial_normaliza_el_departamento_del_empleo():
     assert "assert len(componentes_territorio) > 1" in codigo, (
         "Falta la red de seguridad que detecta un cruce vacío por departamento."
     )
+
+
+def test_ninguna_celda_del_catalogo_imprime_por_consola():
+    """Regla del dueño (2026-09-09): el texto que acompaña a una celda sale
+    con el formato del informe (markdown vía `nota(...)`, números con coma
+    decimal y punto de miles), nunca como salida cruda de consola con
+    `print` — en el PDF esas líneas aparecían en tipografía de código y con
+    separadores de miles en inglés ("23,292")."""
+    from encuesta_hogares import verificacion_catalogo as vc
+
+    celdas = nb.construir_celdas_notebook(
+        anio_base=2025, metricas=sorted(vc.MANIFEST), incluir_brecha_digital=True,
+        incluir_fies=True, incluir_empleo=True, incluir_seguridad=True,
+    )
+    con_print = [c.markdown.split(chr(10))[0][:50] for c in celdas if "print(" in c.codigo]
+    assert con_print == [], con_print
+    assert "def nota(" in nb._CABECERA
+    # Ningún separador de miles a la inglesa en el texto que se muestra.
+    assert not any(":,}" in c.codigo for c in celdas)

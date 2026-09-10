@@ -80,9 +80,10 @@ def _texto_outputs(celda: dict) -> str:
         if "text" in salida:
             t = salida["text"]
             texto += "".join(t) if isinstance(t, list) else t
-        plano = (salida.get("data") or {}).get("text/plain")
-        if plano:
-            texto += "".join(plano) if isinstance(plano, list) else plano
+        for clave in ("text/plain", "text/markdown"):
+            contenido = (salida.get("data") or {}).get(clave)
+            if contenido:
+                texto += "".join(contenido) if isinstance(contenido, list) else contenido
     return texto
 
 
