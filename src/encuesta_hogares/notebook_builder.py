@@ -843,8 +843,8 @@ def _m15() -> Celda:
         'mejor_depto = indice_territorial.index[0]\n'
         'peor_depto = indice_territorial.index[-1]\n'
         'brecha_territorial = indice_territorial.loc[mejor_depto, "indice"] - indice_territorial.loc[peor_depto, "indice"]\n'
-        'nota(f"Brecha territorial: {mejor_depto} ({_res.fmt(indice_territorial.loc[mejor_depto, \'indice\'], 2)}) frente a '
-        '{peor_depto} ({_res.fmt(indice_territorial.loc[peor_depto, \'indice\'], 2)}) — diferencia de {_res.fmt(brecha_territorial, 2)}")\n\n'
+        'nota(f"Brecha territorial: {_res.etiqueta(mejor_depto)} ({_res.fmt(indice_territorial.loc[mejor_depto, \'indice\'], 2)}) frente a '
+        '{_res.etiqueta(peor_depto)} ({_res.fmt(indice_territorial.loc[peor_depto, \'indice\'], 2)}) — diferencia de {_res.fmt(brecha_territorial, 2)}")\n\n'
         "fig = viz.plot_dumbbell(\n"
         '    categorias=["Índice de desarrollo territorial"],\n'
         '    valores_a=[indice_territorial.loc[mejor_depto, "indice"]],\n'

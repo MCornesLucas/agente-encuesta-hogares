@@ -10,6 +10,18 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.5] — 2026-09-09
+
+### Corregido
+
+- **Ninguna celda del informe imprime por consola.** Las líneas que
+  acompañaban a la preparación de datos y a algunas métricas ("Hogares en
+  todo el país: 23,292", brechas, avisos de muestra chica) salían como
+  texto crudo de consola, en tipografía de código y con separadores de
+  miles en inglés. Ahora salen con el formato del documento (`nota(...)`,
+  markdown) y con números en formato español (23.292; 48,92). Un test
+  impide que vuelva a entrar un `print` al catálogo.
+
 ## [0.15.4] — 2026-09-09
 
 ### Corregido
