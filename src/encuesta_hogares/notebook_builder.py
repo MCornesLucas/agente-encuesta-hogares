@@ -1484,10 +1484,10 @@ _FUENTES_POR_BLOQUE: dict[str, list[str]] = {
         "CEPAL — Observatorio de Desarrollo Digital de América Latina y el Caribe: "
         "https://desarrollodigital.cepal.org/es/indicadores",
         "UIT/ITU — ICT Development Index: https://www.itu.int/en/ITU-D/Statistics/Pages/IDI/default.aspx",
-        "A4AI — estándar «Meaningful Connectivity»: "
-        "https://a4ai.org/news/what-is-meaningful-internet-access-conceptualising-a-holistic-ict4d-policy-framework/",
-        "Muñoz, R. — «Brechas de acceso digital: cambio histórico y ciclo vital», Revista de Ciencias "
-        "Sociales, UdelaR: https://rcs.cienciassociales.edu.uy/index.php/rcs/article/view/261",
+        "A4AI (Alliance for Affordable Internet) — estándar «Meaningful Connectivity»: "
+        "https://adi.a4ai.org/meaningful-connectivity/",
+        "Pandolfi, J. (2024) — «Brechas de acceso digital: cambio histórico y ciclo vital», Revista de Ciencias "
+        "Sociales, 37(54), UdelaR: https://doi.org/10.26489/rvs.v37i54.5",
         "CEPAL — «La brecha digital de género: reflejo de la desigualdad social», Nota para la Igualdad N°10: "
         "https://oig.cepal.org/sites/default/files/notas_para_la_igualdad_ndeg10_-_brecha_digital_de_genero.pdf",
         "CEPALSTAT (CEPAL/CELADE) — jefatura de hogar, tipos de hogar, hacinamiento, razón de dependencia "
@@ -1497,8 +1497,8 @@ _FUENTES_POR_BLOQUE: dict[str, list[str]] = {
         "Rodríguez Miranda, A.; Vial Cossani, C.; Centurión, I.; Pérez Fernández, M. — «Índice de Desarrollo "
         "Regional Uruguay 2006-2022 (IDERE-UY)», IECON-FCEA/UdelaR, ANII, 2024: "
         "https://ideas.repec.org/p/ulr/wpaper/dt-01-24.html",
-        "CEPAL/ILPES — «Panorama del desarrollo territorial de América Latina y el Caribe»: "
-        "https://www.cepal.org/es/publicaciones/tipos/panorama-desarrollo-territorial-america-latina-caribe",
+        "CEPAL/ILPES (2025) — «Panorama del desarrollo territorial de América Latina y el Caribe, 2024»: "
+        "https://www.cepal.org/es/publicaciones/81240-panorama-desarrollo-territorial-america-latina-caribe-2024-nuevas-capacidades-la",
         "CEPAL — «Guía metodológica para el diseño de indicadores compuestos de desarrollo sostenible», 2009: "
         "https://repositorio.cepal.org/handle/11362/3663",
     ],
@@ -1515,8 +1515,8 @@ _FUENTES_POR_BLOQUE: dict[str, list[str]] = {
         "https://repositorio.cepal.org/handle/11362/5711",
     ],
     "empleo": [
-        "Indicadores Clave del Mercado de Trabajo (KILM) — OIT: "
-        "https://www.ilo.org/resource/key-indicators-labour-market-kilm",
+        "Key Indicators of the Labour Market (KILM), novena edición — OIT (2016): "
+        "https://www.ilo.org/publications/key-indicators-labour-market-kilm-ninth-edition",
         "«Se profundizó la brecha de género en el mercado laboral» — Ámbito: "
         "https://www.ambito.com/uruguay/se-profundizo-la-brecha-genero-el-mercado-laboral-n6096977",
         "«El desempleo entre los más jóvenes cerró cerca del 25% en 2024» — Ámbito: "
@@ -1525,8 +1525,8 @@ _FUENTES_POR_BLOQUE: dict[str, list[str]] = {
         "https://www.xn--lamaana-7za.uy/actualidad/trabajo-subempleo-e-informalidad-afectan-a-casi-3-de-cada-10-ocupados-en-uruguay/",
     ],
     "seguridad": [
-        "Manual para Encuestas de Victimización — UNODC/UNECE: "
-        "https://www.unodc.org/documents/data-and-analysis/Crime-statistics/Manual_Victimization_surveys_2009_spanish.pdf",
+        "Manual para Encuestas de Victimización — UNODC/UNECE (2010): "
+        "https://unece.org/statistics/publications/manual-victimization-surveys",
         "«Qué porcentaje de delitos son denunciados a la Policía, según informe del INE» — Montevideo Portal: "
         "https://www.montevideo.com.uy/Noticias/Que-porcentaje-de-delitos-son-denunciados-a-la-Policia-segun-informe-del-INE-uc914924",
     ],

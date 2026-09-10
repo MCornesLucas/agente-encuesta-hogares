@@ -72,12 +72,13 @@ Organizado por tema. Dentro de cada tema, alfabético por autor/organismo.
 - CEPALSTAT (CEPAL/CELADE) — jefatura de hogar, tipos de hogar,
   hacinamiento, razón de dependencia demográfica:
   https://statistics.cepal.org/portal/cepalstat/
-- A4AI — estándar "Meaningful Connectivity":
-  https://a4ai.org/news/what-is-meaningful-internet-access-conceptualising-a-holistic-ict4d-policy-framework/
-- Muñoz, R. — "Brechas de acceso digital: cambio histórico y ciclo vital"
-  (aplica el enfoque de cohorte a esta misma encuesta), *Revista de
-  Ciencias Sociales*, UdelaR:
-  https://rcs.cienciassociales.edu.uy/index.php/rcs/article/view/261
+- A4AI (Alliance for Affordable Internet) — estándar "Meaningful
+  Connectivity": https://adi.a4ai.org/meaningful-connectivity/
+- Pandolfi, J. (2024). "Brechas de acceso digital: cambio histórico y
+  ciclo vital. Reflexiones sobre el primer nivel de acceso a TIC según
+  edad, cohorte y período" (aplica el enfoque de cohorte a esta misma
+  encuesta). *Revista de Ciencias Sociales*, 37(54), UdelaR:
+  https://doi.org/10.26489/rvs.v37i54.5
 - UIT/ITU — ICT Development Index:
   https://www.itu.int/en/ITU-D/Statistics/Pages/IDI/default.aspx
 
@@ -85,9 +86,10 @@ Organizado por tema. Dentro de cada tema, alfabético por autor/organismo.
 
 - CEPAL — "Guía metodológica para el diseño de indicadores compuestos de
   desarrollo sostenible" (2009): https://repositorio.cepal.org/handle/11362/3663
-- CEPAL/ILPES — "Panorama del desarrollo territorial de América Latina y
-  el Caribe" (Índice de Desarrollo Regional):
-  https://www.cepal.org/es/publicaciones/tipos/panorama-desarrollo-territorial-america-latina-caribe
+- CEPAL/ILPES (2025). "Panorama del desarrollo territorial de América
+  Latina y el Caribe, 2024: nuevas capacidades para la transformación
+  territorial" (Índice de Desarrollo Regional):
+  https://www.cepal.org/es/publicaciones/81240-panorama-desarrollo-territorial-america-latina-caribe-2024-nuevas-capacidades-la
 - Rodríguez Miranda, A.; Vial Cossani, C.; Centurión, I.; Pérez Fernández,
   M. (2024). "Índice de Desarrollo Regional Uruguay 2006-2022
   (IDERE-UY)". IECON-FCEA/UdelaR, financiado por ANII (Fondo María
@@ -120,8 +122,8 @@ Organizado por tema. Dentro de cada tema, alfabético por autor/organismo.
 
 ## Empleo (métricas 29-36)
 
-- OIT/ILO — Indicadores Clave del Mercado de Trabajo (KILM):
-  https://www.ilo.org/resource/key-indicators-labour-market-kilm
+- OIT/ILO (2016). Key Indicators of the Labour Market (KILM), novena
+  edición: https://www.ilo.org/publications/key-indicators-labour-market-kilm-ninth-edition
 - "Se profundizó la brecha de género en el mercado laboral" — Ámbito:
   https://www.ambito.com/uruguay/se-profundizo-la-brecha-genero-el-mercado-laboral-n6096977
 - "El desempleo entre los más jóvenes cerró cerca del 25% en 2024" — Ámbito:
@@ -132,8 +134,10 @@ Organizado por tema. Dentro de cada tema, alfabético por autor/organismo.
 
 ## Seguridad y Victimización (métricas 37-43)
 
-- Manual para Encuestas de Victimización — UNODC/UNECE:
-  https://www.unodc.org/documents/data-and-analysis/Crime-statistics/Manual_Victimization_surveys_2009_spanish.pdf
+- UNODC/UNECE (2010). Manual on Victimization Surveys (Manual para
+  Encuestas de Victimización), publicación conjunta de la Oficina de las
+  Naciones Unidas contra la Droga y el Delito y la Comisión Económica para
+  Europa: https://unece.org/statistics/publications/manual-victimization-surveys
 - "Qué porcentaje de delitos son denunciados a la Policía, según informe
   del INE" — Montevideo Portal:
   https://www.montevideo.com.uy/Noticias/Que-porcentaje-de-delitos-son-denunciados-a-la-Policia-segun-informe-del-INE-uc914924

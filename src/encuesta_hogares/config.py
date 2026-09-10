@@ -317,8 +317,8 @@ POBPCOAC_GRUPOS = {
 # (con marco internacional, más allá de "tiene/no tiene"). Fuentes: CEPAL/
 # CELADE (jefatura de hogar, tipos de hogar, hacinamiento, dependencia
 # demográfica), UIT/ITU + A4AI ("Meaningful Connectivity"), y el paper de
-# Muñoz (UdelaR, Revista de Ciencias Sociales) que aplica el enfoque de
-# cohorte generacional a esta misma encuesta. Ver
+# Pandolfi (2024, UdelaR, Revista de Ciencias Sociales) que aplica el enfoque
+# de cohorte generacional a esta misma encuesta. Ver
 # .claude/instrucciones/encuesta-hogares.md para el detalle y los links.
 # ============================================================================
 
@@ -364,8 +364,8 @@ UMBRAL_HACINAMIENTO = 2.0
 # (ver preprocessing.compute_cohorte_generacional). Es una aproximación de
 # corte transversal - agrupa por año de nacimiento estimado dentro de esta
 # única corrida, no sigue a las mismas personas a través de varios años
-# como sí hace el estudio de referencia (Muñoz, UdelaR, con la ECH
-# 2009-2019 en panel).
+# como sí hace el estudio de referencia (Pandolfi, 2024, UdelaR, con la
+# ECH 2009-2019).
 COHORTE_BINS = [-float("inf"), 1945, 1964, 1980, 1996, float("inf")]
 COHORTE_LABELS = [
     "Generación silenciosa (hasta 1945)",

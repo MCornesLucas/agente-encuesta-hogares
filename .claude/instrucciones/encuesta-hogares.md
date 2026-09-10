@@ -540,7 +540,7 @@ se basa en marcos de organismos internacionales — CEPAL/CELADE (jefatura
 de hogar, tipos de hogar, hacinamiento, razón de dependencia), UIT/A4AI
 (estándar "Meaningful Connectivity" para calidad de conexión), y un paper
 académico que aplica el enfoque de cohorte generacional a esta misma
-encuesta (Muñoz, Revista de Ciencias Sociales, UdelaR). Puntos a tener en
+encuesta (Pandolfi, 2024, Revista de Ciencias Sociales, UdelaR). Puntos a tener en
 cuenta si alguna de estas métricas está en el informe:
 
 - **Jefatura de hogar** (`parentesco_jefe`, e30) y **tipo de hogar**

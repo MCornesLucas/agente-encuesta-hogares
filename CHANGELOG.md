@@ -10,6 +10,23 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.3] — 2026-09-09
+
+### Corregido
+
+- **Bibliografía**: el artículo "Brechas de acceso digital: cambio histórico
+  y ciclo vital" (Revista de Ciencias Sociales, UdelaR, 37(54), 2024) es de
+  Jimena Pandolfi, no de "Muñoz, R." como decía la entrada; se cita con su
+  DOI. Cuatro enlaces que ya no existían apuntan a la página vigente de cada
+  fuente: A4AI (estándar Meaningful Connectivity), CEPAL/ILPES (Panorama del
+  desarrollo territorial 2024), OIT (KILM, novena edición) y UNODC/UNECE
+  (Manual de encuestas de victimización, ahora en UNECE). Los mismos
+  cambios en la lista de fuentes que el informe agrega por bloque.
+- README: el arranque con `abrir_agente.bat` no requiere escribir nada; el
+  agente arma el resumen final con las cifras calculadas en vez de
+  redactarlo; las métricas y cruces propios se evalúan con las reglas del
+  proyecto; cada corrida es una edición con fecha y hora.
+
 ## [0.15.2] — 2026-09-09
 
 ### Agregado

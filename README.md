@@ -16,14 +16,17 @@ Victimización — ninguno se incluye por defecto), y luego las métricas
 puntuales dentro de cada bloque.
 
 El análisis lo ejecuta un **agente**: un asistente de inteligencia
-artificial (Claude) que carga los datos, construye las gráficas, redacta
-las conclusiones y verifica la consistencia del resultado, guiando todo
-el proceso mediante **formularios visuales que se abren automáticamente
-en el navegador** — sin comandos ni ventanas de terminal. El usuario
-selecciona el año, marca las métricas de interés en el catálogo y
-confirma con un clic. También es posible proponer una métrica propia que
-no figure en el catálogo; el agente advierte si detecta un problema
-metodológico antes de construirla y ofrece una alternativa válida.
+artificial (Claude) que carga los datos, construye las gráficas, arma el
+resumen final con las cifras calculadas y verifica cada paso antes de
+entregar, guiando todo el proceso mediante **formularios visuales que se
+abren automáticamente en el navegador** — sin comandos ni ventanas de
+terminal. El usuario selecciona el año, marca las métricas de interés en
+el catálogo y confirma con un clic. También es posible proponer una
+métrica o un cruce propio que no figure en el catálogo; el agente lo
+evalúa con las mismas reglas del proyecto (ponderación, rigor
+estadístico, justificación de la gráfica con su bibliografía), advierte
+si detecta un problema metodológico antes de construirlo y ofrece una
+alternativa válida.
 
 El resto de este documento está pensado para seguirse paso a paso, sin
 necesidad de conocimientos técnicos previos.
@@ -152,9 +155,9 @@ proceso directamente (ver Paso 5).
 ## Paso 4: Abrir el proyecto en Claude Code
 
 La forma más simple es hacer doble clic en **`abrir_agente.bat`**, en la
-raíz del proyecto. Se abre una terminal ya ubicada en la carpeta
-correspondiente y lanza Claude Code directamente — listo para continuar
-con el Paso 5.
+raíz del proyecto. Muestra una pantalla de inicio en el navegador y, al
+confirmar, lanza Claude Code con el pedido ya hecho: el flujo arranca
+solo, sin escribir nada. En ese caso el Paso 5 no hace falta.
 
 Alternativamente, para hacerlo manualmente o si se va a editar el
 proyecto:
@@ -167,17 +170,16 @@ proyecto:
 
 ## Paso 5: Solicitar el análisis al agente
 
-En la conversación con Claude Code, describa lo que necesita con sus
-propias palabras. Por ejemplo:
+Solo si abrió Claude Code manualmente (sin `abrir_agente.bat`): en la
+conversación, describa lo que necesita con sus propias palabras. Por
+ejemplo:
 
 > Quiero hacer el análisis de la Encuesta de Hogares con los datos de 2024
 > que puse en la carpeta data/
 
-Claude reconocerá que la solicitud corresponde al agente de este
-proyecto y comenzará a trabajar. Si en algún momento no se activa
-automáticamente, puede solicitarlo de forma explícita:
-
-> Usá el agente encuesta-hogares para analizar los datos de 2024
+Claude reconocerá el pedido y abrirá el primer formulario. El año y el
+contenido del informe no se toman del mensaje: siempre se confirman en
+los formularios.
 
 ## Paso 6: Completar los formularios
 
@@ -305,6 +307,12 @@ preguntas de la encuesta entre 2019 y el año utilizado?**
 El agente lo detecta automáticamente al validar los datos nuevos, y
 solicita confirmación antes de asumir cualquier cambio — nunca infiere en
 silencio.
+
+**¿Qué pasa si se repite una corrida del mismo año?**
+Cada corrida es una edición propia, con la fecha y la hora en el nombre
+del archivo, así que no pisa a ninguna anterior. Para volver a construir
+un informe distinto del mismo año basta con elegir "crear un nuevo
+informe" en la pantalla final.
 
 **¿Es posible analizar más de un año y compararlos?**
 Sí — el propio formulario del catálogo permite marcar qué métricas
