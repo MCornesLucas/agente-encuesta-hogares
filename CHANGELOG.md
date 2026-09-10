@@ -10,6 +10,25 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.0] — 2026-09-09
+
+### Cambiado
+
+- **El "Resumen analítico final" lo arma el propio notebook.** Una frase
+  por métrica (`notebook_builder._RESUMEN_POR_METRICA`, 42 plantillas)
+  evaluada sobre las variables que la métrica calculó, organizada por
+  bloque, con las cifras formateadas con coma decimal. El número del
+  resumen es el mismo que muestra la gráfica y ningún modelo redacta ni
+  transcribe cifras; una plantilla que falla corta el informe con el
+  número de la métrica. La sección de fuentes de consulta se agrega en el
+  mismo paso. Validado contra los datos reales de 2019, 2023, 2024 y 2025.
+- `entregar` ya no pide un resumen: genera el HTML y el PDF del notebook
+  construido. `--comentario` es opcional y cada cifra que cite se valida
+  contra los resultados ejecutados.
+- La verificación posterior a la ejecución exige que el resumen haya
+  producido texto; un fallo de `nbconvert` se informa con la celda y el
+  error, no con el traceback de subprocess.
+
 ## [0.14.2] — 2026-09-09
 
 ### Agregado
