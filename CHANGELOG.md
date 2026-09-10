@@ -10,6 +10,22 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.2] — 2026-09-09
+
+### Agregado
+
+- **Las métricas y cruces a medida cumplen los mismos estándares que el
+  catálogo, verificados antes de ejecutar.** Toda celda escrita a mano
+  (métrica propia, cruce o comparación entre años) va en el archivo
+  `--extra` y `construir` exige: encabezado numerado desde 43 (sin chocar
+  con el catálogo ni repetirse), pregunta guía, gráfica con `viz.plot_...`,
+  justificación que cita a un autor de `docs/BIBLIOGRAFIA.md`, y su frase
+  para el resumen analítico (`frases_resumen`, misma mecánica que las
+  plantillas del catálogo: se evalúa sobre las variables de la celda, así
+  la métrica a medida entra al resumen con sus cifras reales). Las
+  estadísticas crudas sin ponderar las bloquea la verificación del
+  notebook completo. El paso 6 de las instrucciones describe el camino.
+
 ## [0.15.1] — 2026-09-09
 
 ### Cambiado

@@ -104,21 +104,84 @@ def ultima_edicion(anio: int) -> Path | None:
 # ---------------------------------------------------------------------------
 
 
-def _cargar_extras(ruta: Path | None) -> tuple[dict[int, list[nb.Celda]], list[nb.Celda]]:
-    """Las celdas a medida (comparaciones entre años, métricas propias)
-    vienen de un archivo Python que define `celdas_extra` (dict número →
-    lista de Celda, colgadas de esa métrica) y/o `celdas_finales` (lista de
-    Celda, al final antes de la nota metodológica)."""
+PRIMER_NUMERO_A_MEDIDA = max(verificacion_catalogo.MANIFEST) + 1
+_ENCABEZADO_A_MEDIDA = re.compile(r"^###\s+(\d+)\.\s+\S")
+
+
+def _cargar_extras(ruta: Path | None) -> tuple[dict[int, list[nb.Celda]], list[nb.Celda], dict[int, str]]:
+    """Las celdas a medida (métricas propias, cruces, comparaciones entre
+    años) vienen de un archivo Python que define `celdas_extra` (dict
+    número de métrica del catálogo → lista de Celda, colgadas de esa
+    métrica), `celdas_finales` (lista de Celda, al final antes de la nota
+    metodológica) y `frases_resumen` (dict número de la celda a medida →
+    expresión de Python para el resumen analítico, con el mismo contrato
+    que las plantillas del catálogo)."""
     if ruta is None:
-        return {}, []
+        return {}, [], {}
+    if not Path(ruta).exists():
+        raise InformeInvalido(f"No existe el archivo de celdas a medida {ruta}")
     espacio = runpy.run_path(str(ruta))
     extra = espacio.get("celdas_extra") or {}
     finales = espacio.get("celdas_finales") or []
+    frases = espacio.get("frases_resumen") or {}
     if not isinstance(extra, dict) or not all(isinstance(v, list) for v in extra.values()):
         raise InformeInvalido(f"{ruta}: `celdas_extra` tiene que ser un dict {{numero: [Celda, ...]}}")
     if not isinstance(finales, list):
         raise InformeInvalido(f"{ruta}: `celdas_finales` tiene que ser una lista de Celda")
-    return {int(k): v for k, v in extra.items()}, finales
+    if not isinstance(frases, dict) or not all(isinstance(v, str) for v in frases.values()):
+        raise InformeInvalido(f"{ruta}: `frases_resumen` tiene que ser un dict {{numero: 'expresión'}}")
+    extra = {int(k): v for k, v in extra.items()}
+    frases = {int(k): v for k, v in frases.items()}
+    problemas = _validar_celdas_a_medida([c for lista in extra.values() for c in lista] + list(finales), frases)
+    if problemas:
+        raise InformeInvalido(f"Las celdas a medida de {ruta} no cumplen los estándares del proyecto:\n- " + "\n- ".join(problemas))
+    return extra, finales, frases
+
+
+def _validar_celdas_a_medida(celdas: list, frases: dict[int, str]) -> list[str]:
+    """Toda celda escrita a mano —métrica propia, cruce o comparación entre
+    años— cumple lo mismo que las del catálogo, y se comprueba ANTES de
+    ejecutar: encabezado numerado a partir de {PRIMER_NUMERO_A_MEDIDA}
+    (sin chocar con el catálogo ni repetirse), pregunta guía, gráfica con
+    `viz.plot_...`, justificación que cita a un autor de
+    `docs/BIBLIOGRAFIA.md`, su frase para el resumen analítico, y sin
+    estadísticas crudas sin ponderar (eso lo revisa `calculos_sin_ponderar`
+    sobre el notebook completo)."""
+    problemas: list[str] = []
+    numeros: list[int] = []
+    for celda in celdas:
+        if not isinstance(celda, nb.Celda):
+            problemas.append(f"{celda!r} no es una notebook_builder.Celda")
+            continue
+        primera = next((linea.strip() for linea in celda.markdown.split("\n") if linea.strip()), "")
+        m = _ENCABEZADO_A_MEDIDA.match(primera)
+        if not m:
+            problemas.append(f"«{primera[:60]}»: el encabezado tiene que ser «### N. Nombre» con N desde {PRIMER_NUMERO_A_MEDIDA}")
+            continue
+        numero = int(m.group(1))
+        etiqueta = f"celda a medida {numero}"
+        if numero < PRIMER_NUMERO_A_MEDIDA:
+            problemas.append(f"{etiqueta}: el número choca con el catálogo (usar {PRIMER_NUMERO_A_MEDIDA} en adelante)")
+        if numero in numeros:
+            problemas.append(f"{etiqueta}: número repetido")
+        numeros.append(numero)
+        if "¿Qué pregunta responde?" not in celda.markdown:
+            problemas.append(f"{etiqueta}: falta la pregunta guía («**¿Qué pregunta responde?**») en el markdown")
+        if not re.search(r"viz\.plot_\w+\(", celda.codigo):
+            problemas.append(f"{etiqueta}: falta la gráfica (una función viz.plot_...)")
+        if not verificacion_notebook.tiene_cita_con_fundamento(celda.markdown_final):
+            problemas.append(f"{etiqueta}: la justificación (markdown_final) no cita a ningún autor de docs/BIBLIOGRAFIA.md")
+        if numero not in frases:
+            problemas.append(f"{etiqueta}: falta su frase en `frases_resumen` (expresión sobre las variables de la celda)")
+        else:
+            try:
+                compile(frases[numero], f"frases_resumen[{numero}]", "eval")
+            except SyntaxError as e:
+                problemas.append(f"{etiqueta}: la frase del resumen no es una expresión válida ({e.msg})")
+    for numero in frases:
+        if numero not in numeros:
+            problemas.append(f"frases_resumen[{numero}] no corresponde a ninguna celda a medida")
+    return problemas
 
 
 def _bloques_de(metricas: list[int]) -> list[str]:
@@ -143,7 +206,7 @@ def construir(
     destino.parent.mkdir(parents=True, exist_ok=True)
 
     with bitacora.medir("construir_notebook"):
-        celdas_extra, celdas_finales = _cargar_extras(extra)
+        celdas_extra, celdas_finales, frases_extra = _cargar_extras(extra)
         celdas = nb.construir_celdas_notebook(
             anio_base=anio,
             metricas=metricas,
@@ -161,7 +224,7 @@ def construir(
         # El resumen analítico se arma dentro del notebook, desde las
         # variables de cada métrica, y las fuentes de consulta salen de los
         # bloques presentes: nada de esto lo redacta el modelo.
-        celdas.extend(nb.celdas_resumen_analitico(metricas))
+        celdas.extend(nb.celdas_resumen_analitico(metricas, frases_extra))
         celdas.append(nb.celda_cifras(destino))
         nb.escribir_notebook(celdas, destino)
 

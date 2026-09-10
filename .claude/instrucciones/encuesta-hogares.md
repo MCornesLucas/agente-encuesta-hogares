@@ -762,13 +762,40 @@ resultado no cierra. Se escriben en **un único archivo Python** (con
 ```python
 from encuesta_hogares.notebook_builder import Celda
 
-# Colgadas de la métrica del catálogo a la que acompañan (justo después de ella).
+# Colgadas de la métrica del catálogo a la que acompañan (justo después de ella):
+# típicamente la comparación entre años de esa métrica.
 celdas_extra = {
-    8: [Celda(markdown="### Comparación 2023 vs. 2025 ...", codigo="...", markdown_final="...")],
+    8: [Celda(markdown="### 43. Jefatura femenina, 2023 frente a 2025\n\n**¿Qué pregunta responde?** ...",
+              codigo="...\nfig = viz.plot_dumbbell(...)\nfig.show()",
+              markdown_final="Gráfico de dos puntos conectados ... (Tufte; Knaflic, storytellingwithdata.com).")],
 }
-# Al final del informe, antes de la nota metodológica.
-celdas_finales = [Celda(markdown="### 99. ...", codigo="...", markdown_final="...")]
+# Al final del informe, antes de la nota metodológica: métricas y cruces propios.
+celdas_finales = [
+    Celda(markdown="### 44. Ingreso mediano por departamento\n\n**¿Qué pregunta responde?** ...",
+          codigo="ingreso_depto = analysis.ingreso_hogar_mediano_por_departamento(hogares, departamentos)\n"
+                 "fig = viz.plot_ingreso_hogar_departamento(ingreso_depto)\nfig.show()",
+          markdown_final="Barras horizontales ... (Cleveland & McGill, 1984)."),
+]
+# Una frase por celda a medida para el resumen analítico: una expresión de
+# Python sobre las variables de esa misma celda (mismo contrato que las
+# plantillas del catálogo; `_f`, `_v`, `_b` son los helpers de resumen.py).
+frases_resumen = {
+    43: 'f"La jefatura femenina pasó de {_f(valor_2023)}% a {_f(valor_2025)}%"',
+    44: '_b(ingreso_depto.reset_index(), "departamento", "ingreso_hogar", "El ingreso mediano del hogar", unidad="")',
+}
 ```
+
+**Toda celda a medida se verifica antes de ejecutar, con los mismos
+estándares que las del catálogo** — si algo falta, `construir` no ejecuta
+y dice qué: encabezado `### N. Nombre` con N desde 43 (nunca un número del
+catálogo, nunca repetido); la pregunta guía (`**¿Qué pregunta responde?**`);
+la gráfica con una función `viz.plot_...`; la justificación en
+`markdown_final` citando a un autor que esté en `docs/BIBLIOGRAFIA.md` (si
+la fuente es nueva, primero va a la bibliografía); su frase en
+`frases_resumen`; y ninguna estadística cruda sin ponderar (`.mean()`,
+`.median()`, `.value_counts()`: siempre los helpers ponderados de
+`analysis.py`). Un cruce entre dos variables es una métrica a medida más y
+sigue exactamente este camino.
 
 Solo en este caso hace falta leer (con `Read`, una sola vez)
 `analysis.py` y `visualization.py` para saber qué funciones existen y qué
@@ -889,8 +916,9 @@ normal no hay comentario.
 Esto aplica tanto a la métrica libre que haya escrito en el formulario del
 paso 4 como a cualquier pregunta nueva que surja más adelante:
 
-1. **Identificar qué variable(s) del .sav responden esa pregunta.** Si no
-   es obvio, inspeccionar los metadatos con pyreadstat.
+1. **Identificar qué variable(s) del microdato responden esa pregunta**
+   (`.sav` hasta 2019, CSV combinado desde 2023). Si no es obvio,
+   inspeccionar los metadatos con pyreadstat o el encabezado del CSV.
 2. **Antes de escribir una sola línea de código, revisar la idea contra
    la lista de la sección 2 de `docs/METODOLOGIA.md`** (falacia ecológica,
    sesgo de mediador, celdas chicas, proporciones que no se pueden
@@ -954,14 +982,19 @@ paso 4 como a cualquier pregunta nueva que surja más adelante:
    corrigiendo y volviendo a correr `pytest` en un ciclo de prueba y
    error. Si se termina editando el mismo archivo de test tres o cuatro
    veces seguidas, parar: significa que no se leyó bien el patrón
-   existente antes de empezar. Agregarle su test, y sumar la celda al
-   notebook con las cinco partes en orden (ver el paso 5.2): pregunta guía
-   antes de la gráfica, justificación académica después, en
-   `markdown_final`.
-5. Correr el flujo de verificación completo **una vez**, no en un bucle.
-6. Ayudar al usuario a redactar una conclusión corta para esa sección
-   nueva, basada en los números reales que salieron — nunca en una
-   estimación.
+   existente antes de empezar. Agregarle su test, y escribir la celda en
+   el archivo `--extra` del paso 5 con las cinco partes en orden: encabezado
+   numerado desde 43, pregunta guía antes de la gráfica, términos propios
+   si hacen falta, la gráfica, y la justificación académica después, en
+   `markdown_final`, citando la bibliografía.
+5. Escribir también su frase en `frases_resumen` (ver el paso 5): así la
+   métrica entra al "Resumen analítico final" con sus cifras reales, sin
+   redactar nada después de ejecutar. Correr `construir` con `--extra`
+   **una vez**: verifica las celdas a medida con los mismos estándares
+   que el catálogo antes de ejecutar y, si algo falta, lo dice.
+6. La conclusión de esa sección es la frase del resumen: sale de las
+   variables de la celda, nunca de una estimación ni de un número escrito
+   a mano.
 
 ### 6.5. Si construiste algo reusable, dejalo anotado — nunca se lo preguntes a la persona en el momento
 
@@ -999,8 +1032,8 @@ mencionarlo (no como pregunta):
 La decisión real de incorporarlo sigue el mismo camino de siempre: el
 dueño del proyecto revisa las sugerencias cuando tenga tiempo (con
 `tools/resumen_sesiones.py`) o lo pide él mismo por chat en otra sesión —
-recién ahí se sigue el proceso ya establecido en "Curación del catálogo"
-(más abajo), con su chequeo de cuatro puntos. No hacerlo por cuenta
+recién ahí se sigue el proceso ya establecido en
+`docs/CURACION_DEL_CATALOGO.md`, con su compuerta previa. No hacerlo por cuenta
 propia sin ese chequeo, ni publicar nada (ver paso 9, sigue prohibido
 incluso acá).
 

@@ -18,6 +18,12 @@ ejecutar* el trabajo una vez que las reglas ya están claras.
    ```bash
    ./run_python.bat -m encuesta_hogares.generar_informe construir --anio <año> --metricas <lista> --bloques <lista>
    ```
+   Las métricas y cruces a medida y las comparaciones entre años van en el
+   archivo `--extra` (`celdas_extra`, `celdas_finales`, `frases_resumen`) y
+   se verifican con los mismos estándares que el catálogo antes de
+   ejecutar: encabezado numerado desde 43, pregunta guía, gráfica,
+   justificación que cita la bibliografía, frase para el resumen, sin
+   estadísticas crudas sin ponderar.
    Arma el notebook (`notebook_builder`), lo verifica antes de ejecutarlo
    (`verificacion_notebook.verificar_antes_de_ejecutar`: gráficas
    duplicadas, métricas sin gráfica o sin cita de un autor de

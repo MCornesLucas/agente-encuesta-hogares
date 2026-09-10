@@ -1634,11 +1634,21 @@ _RESUMEN_POR_METRICA: dict[int, str] = {
 }
 
 
-def celdas_resumen_analitico(metricas: list[int]) -> list[Celda]:
+BLOQUE_A_MEDIDA = "Métricas y cruces a medida"
+
+
+def celdas_resumen_analitico(metricas: list[int], frases_extra: dict[int, str] | None = None) -> list[Celda]:
     """La sección que cierra el informe: encabezado, una celda de código que
     arma el resumen por bloque desde las variables de cada métrica presente
     (salida en markdown; el código no se ve en el informe sin código), y la
-    lista de fuentes de consulta de los bloques presentes."""
+    lista de fuentes de consulta de los bloques presentes.
+
+    `frases_extra`: {número de la celda a medida: expresión de Python}, con
+    el mismo contrato que `_RESUMEN_POR_METRICA` — la escribe el agente en
+    el archivo `--extra` junto con la celda, sobre las variables de esa
+    celda, y se evalúa acá bajo el bloque «Métricas y cruces a medida». Así
+    las métricas a medida entran al resumen con sus cifras reales, sin que
+    nadie las transcriba después de ejecutar."""
     elegidas = sorted(set(metricas))
     lineas = [
         "from IPython.display import Markdown as _Markdown, display as _display",
@@ -1655,11 +1665,17 @@ def celdas_resumen_analitico(metricas: list[int]) -> list[Celda]:
                     "except Exception as _e:",
                     f"    raise RuntimeError(f\"resumen de la métrica {numero}: {{_e}}\") from _e",
                 ]
+    for numero, expresion in sorted((frases_extra or {}).items()):
+        lineas += [
+            "try:",
+            f"    _frases.setdefault({BLOQUE_A_MEDIDA!r}, []).append({expresion})",
+            "except Exception as _e:",
+            f"    raise RuntimeError(f\"resumen de la métrica a medida {numero}: {{_e}}\") from _e",
+        ]
     lineas.append("_display(_Markdown(_res.armar_markdown(_frases)))")
     celdas = [
         Celda(markdown="## Resumen analítico final\n\nLas cifras de esta sección son las mismas que muestran "
-                       "las gráficas de cada métrica; las métricas a medida y las comparaciones entre años, si las hay, "
-                       "se leen en su propia sección.", codigo="\n".join(lineas)),
+                       "las gráficas de cada métrica.", codigo="\n".join(lineas)),
     ]
     bloques_presentes = [b for b, (rango, _n) in verificacion_catalogo.BLOQUES.items() if any(n in rango for n in elegidas)]
     fuentes = fuentes_de_consulta(bloques_presentes)

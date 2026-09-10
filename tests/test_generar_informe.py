@@ -148,8 +148,9 @@ def test_construir_no_ejecuta_el_notebook_si_la_verificacion_previa_falla(tmp_pa
     extra = tmp_path / "extra.py"
     extra.write_text(
         "from encuesta_hogares.notebook_builder import Celda\n"
-        "celdas_extra = {1: [Celda(markdown='### 99. A medida\\n\\nPregunta.', codigo='fig = viz.plot_x(df)\\nfig', "
-        "markdown_final='Justificación (Cleveland & McGill, 1984).')]}\n",
+        "celdas_extra = {1: [Celda(markdown='### 99. A medida\\n\\n**¿Qué pregunta responde?** P.', codigo='fig = viz.plot_x(df)\\nfig', "
+        "markdown_final='Justificación (Cleveland & McGill, 1984).')]}\n"
+        "frases_resumen = {99: 'f\"Frase {1}\"'}\n",
         encoding="utf-8",
     )
     with pytest.raises(gi.InformeInvalido, match="no pasa la verificación previa"):
@@ -169,7 +170,43 @@ def test_cargar_extras_exige_la_forma_correcta(tmp_path):
     malo.write_text("celdas_extra = [1, 2]\n", encoding="utf-8")
     with pytest.raises(gi.InformeInvalido, match="celdas_extra"):
         gi._cargar_extras(malo)
-    assert gi._cargar_extras(None) == ({}, [])
+    assert gi._cargar_extras(None) == ({}, [], {})
+
+
+def test_las_celdas_a_medida_cumplen_los_mismos_estandares_que_el_catalogo():
+    """Regla del dueño: una métrica o cruce pedido por la persona se resuelve
+    con los estándares del proyecto — pregunta guía, gráfica, justificación
+    citando la bibliografía, frase en el resumen, numeración fuera del
+    catálogo — y eso se verifica antes de ejecutar, no se confía."""
+    buena = nb.Celda(markdown="### 43. Ingreso por departamento\n\n**¿Qué pregunta responde?** X.",
+                     codigo="t = analysis.ingreso_hogar_mediano_por_departamento(hogares, deptos)\nfig = viz.plot_x(t)\nfig.show()",
+                     markdown_final="Barras horizontales (Cleveland & McGill, 1984).")
+    assert gi._validar_celdas_a_medida([buena], {43: 'f"El ingreso mediano va de {_f(t.min(), 0)} a {_f(t.max(), 0)}"'}) == []
+
+    sin_nada = nb.Celda(markdown="### Comparación 2023 vs 2025\n\nTexto.", codigo="x = 1", markdown_final="Porque sí (Pérez, 2004).")
+    problemas = gi._validar_celdas_a_medida([sin_nada], {})
+    assert any("### N. Nombre" in p for p in problemas)
+
+    choca = nb.Celda(markdown="### 8. Repite un número del catálogo\n\n**¿Qué pregunta responde?** X.", codigo="fig = viz.plot_x(df)\nfig.show()",
+                     markdown_final="Sin cita.")
+    problemas = gi._validar_celdas_a_medida([choca], {8: "not python ("})
+    assert any("choca con el catálogo" in p for p in problemas)
+    assert any("BIBLIOGRAFIA" in p for p in problemas)
+    assert any("no es una expresión válida" in p for p in problemas)
+
+    sin_frase = nb.Celda(markdown="### 44. Otra\n\n**¿Qué pregunta responde?** X.", codigo="fig = viz.plot_x(df)\nfig.show()",
+                         markdown_final="(Tufte, 2001)")
+    problemas = gi._validar_celdas_a_medida([sin_frase, sin_frase], {45: "1"})
+    assert any("falta su frase" in p for p in problemas)
+    assert any("número repetido" in p for p in problemas)
+    assert any("frases_resumen[45]" in p for p in problemas)
+
+
+def test_las_frases_a_medida_entran_al_resumen_bajo_su_propio_bloque():
+    celdas = nb.celdas_resumen_analitico([1], {43: 'f"Frase a medida"'})
+    codigo = celdas[0].codigo
+    compile(codigo, "resumen", "exec")
+    assert nb.BLOQUE_A_MEDIDA in codigo and "métrica a medida 43" in codigo
 
 
 def _notebook_ejecutado_falso(ruta: Path, con_comentario_viejo=False) -> None:
@@ -399,7 +436,8 @@ def test_construir_escribe_en_ediciones_y_registra_la_reejecucion_del_mismo_anio
     (tmp_path / "ediciones" / "Informe_ECH_2025_20260909-1000.ipynb").write_text("{}", encoding="utf-8")
     extra = tmp_path / "extra.py"
     extra.write_text("from encuesta_hogares.notebook_builder import Celda\n"
-                     "celdas_extra = {1: [Celda(markdown='### 99. X\\n\\nP.', codigo='fig = viz.plot_x(df)\\nfig', markdown_final='(Tufte, 2001)')]}\n",
+                     "celdas_extra = {1: [Celda(markdown='### 99. X\\n\\n**¿Qué pregunta responde?** P.', codigo='fig = viz.plot_x(df)\\nfig', markdown_final='(Tufte, 2001)')]}\n"
+                     "frases_resumen = {99: 'f\"x\"'}\n",
                      encoding="utf-8")
     with pytest.raises(gi.InformeInvalido):
         gi.construir(2025, [1], ["brecha_digital"], extra=extra, motivo="prueba")
