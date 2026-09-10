@@ -227,10 +227,10 @@ mismo año, no uno solo combinado.
 
 ## Paso 7: Revisar los resultados
 
-Se generan tres archivos nuevos en `notebooks/`, todos identificados con
-el año elegido (por ejemplo, `Informe_ECH_2024.ipynb/.html/.pdf`; si se
-repite la corrida para el mismo año, el informe anterior no se pierde,
-queda guardado con el sufijo "(anterior)"):
+Cada corrida genera su propia edición en `notebooks/ediciones/`: tres
+archivos con el año de los datos y la fecha y hora de la corrida en el
+nombre (por ejemplo, `Informe_ECH_2024_20260909-1732.ipynb/.html/.pdf`).
+Repetir una corrida del mismo año no pisa la anterior:
 
 - El notebook, con el análisis completo y el código incluido, para quien
   desee revisar el detalle técnico.

@@ -58,12 +58,11 @@ def test_la_curacion_del_catalogo_tiene_compuerta_previa():
 
 def test_el_nombre_del_notebook_esta_atado_al_anio_sin_variantes():
     texto = AGENTE_MD.read_text(encoding="utf-8")
-    assert "notebooks/Informe_ECH_{año}.ipynb" in texto, (
-        "La regla de que el notebook se llama siempre "
-        "'notebooks/Informe_ECH_{año}.ipynb', sin sufijos ni variantes, "
-        "desapareció del archivo. Es lo que evita que dos años choquen "
-        "entre sí y que el respaldo automático (entrega.py) se dispare "
-        "solo cuando de verdad se repite el mismo año."
+    assert "notebooks/ediciones/Informe_ECH_{año}_" in texto, (
+        "La regla de que cada corrida escribe su propia edición en "
+        "'notebooks/ediciones/Informe_ECH_{año}_<fecha-hora>.*' desapareció "
+        "del archivo. Es lo que evita que dos corridas (del mismo año o de "
+        "años distintos) se pisen entre sí."
     )
 
 

@@ -12,7 +12,9 @@ medida del archivo `--extra`, si lo hay), lo VERIFICA antes de ejecutarlo
 métricas sin gráfica o sin cita, texto sin completar, encabezados
 repetidos), lo ejecuta una sola vez con `jupyter nbconvert`, verifica lo
 que solo se sabe después (celdas con error, gráficas sin imagen) y deja
-las cifras de cada métrica en `notebooks/_cifras_Informe_ECH_<año>.json`.
+las cifras de cada métrica en un JSON al lado del notebook. Cada corrida
+escribe su propia edición, `notebooks/ediciones/Informe_ECH_<año>_<fecha-hora>.*`,
+así que dos corridas del mismo año nunca se pisan.
 Imprime un JSON con las rutas.
 
 El resumen analítico final lo arma el propio notebook, dentro de
@@ -61,6 +63,13 @@ from . import bitacora, config, entrega, verificacion_catalogo, verificacion_not
 from . import notebook_builder as nb
 
 NOTEBOOKS = config.PROJECT_ROOT / "notebooks"
+# Cada corrida guiada escribe su propia edición, con fecha y hora en el
+# nombre, en esta carpeta (ignorada por git): dos corridas del mismo año
+# nunca se pisan y no hace falta ningún respaldo "(anterior)". Hasta la
+# v0.15.0 el informe iba a notebooks/Informe_ECH_<año>.* con un único
+# respaldo del anterior; con más de dos corridas de un año, la primera se
+# perdía.
+EDICIONES = NOTEBOOKS / "ediciones"
 ESTILO_CSS = config.PROJECT_ROOT / "docs" / "informe_estilo.css"
 BLOQUES_VALIDOS = tuple(verificacion_catalogo.BLOQUES)
 HORAS_PARA_CONSIDERAR_REEJECUCION = 2
@@ -71,16 +80,23 @@ class InformeInvalido(Exception):
     con su celda; el agente corrige la causa y vuelve a correr `construir`."""
 
 
-def ruta_notebook(anio: int) -> Path:
-    return NOTEBOOKS / f"Informe_ECH_{anio}.ipynb"
+def nombre_edicion(anio: int, momento: dt.datetime | None = None) -> str:
+    """`Informe_ECH_2025_20260909-1732`: el año de los datos y el instante
+    de la corrida, para que el nombre diga de qué es y de cuándo es."""
+    momento = momento or dt.datetime.now()
+    return f"Informe_ECH_{anio}_{momento:%Y%m%d-%H%M}"
 
 
-def ruta_html(anio: int) -> Path:
-    return NOTEBOOKS / f"Informe_ECH_{anio}.html"
+def ruta_notebook(anio: int, momento: dt.datetime | None = None) -> Path:
+    """La ruta de una edición NUEVA del año."""
+    return EDICIONES / f"{nombre_edicion(anio, momento)}.ipynb"
 
 
-def ruta_pdf(anio: int) -> Path:
-    return NOTEBOOKS / f"Informe_ECH_{anio}.pdf"
+def ultima_edicion(anio: int) -> Path | None:
+    """El notebook de la edición más reciente del año, o None si nunca se
+    construyó una. Es lo que `entregar` toma cuando no se le indica una."""
+    candidatas = [p for p in EDICIONES.glob(f"Informe_ECH_{anio}_*.ipynb") if not p.name.startswith("_")]
+    return max(candidatas, key=lambda p: p.stat().st_mtime) if candidatas else None
 
 
 # ---------------------------------------------------------------------------
@@ -117,13 +133,14 @@ def construir(
     motivo: str | None = None,
     destino: Path | None = None,
 ) -> dict:
-    destino = destino or ruta_notebook(anio)
-    destino.parent.mkdir(parents=True, exist_ok=True)
     desconocidos = sorted(set(bloques) - set(BLOQUES_VALIDOS))
     if desconocidos:
         raise InformeInvalido(f"bloques desconocidos: {desconocidos}; válidos: {list(BLOQUES_VALIDOS)}")
 
-    _registrar_reejecucion_si_corresponde(destino, motivo)
+    if destino is None:
+        _registrar_reejecucion_si_corresponde(ultima_edicion(anio), motivo)
+        destino = ruta_notebook(anio)
+    destino.parent.mkdir(parents=True, exist_ok=True)
 
     with bitacora.medir("construir_notebook"):
         celdas_extra, celdas_finales = _cargar_extras(extra)
@@ -202,16 +219,16 @@ def _revisar_plausibilidad(ruta_cifras: Path) -> list[str]:
     return [str(h) for h in verificacion_plausibilidad.revisar(indicadores)]
 
 
-def _registrar_reejecucion_si_corresponde(destino: Path, motivo: str | None) -> None:
-    """Volver a construir el mismo año poco después de la corrida anterior
+def _registrar_reejecucion_si_corresponde(anterior: Path | None, motivo: str | None) -> None:
+    """Volver a construir el mismo año poco después de la edición anterior
     es una re-ejecución: queda registrada con su motivo, como exige el
     paso 7 del agente — antes dependía de que el modelo se acordara, y en
     la bitácora real había 3 motivos para ~17 ejecuciones extra."""
-    if not destino.exists():
+    if anterior is None or not anterior.exists():
         return
-    antiguedad = time.time() - destino.stat().st_mtime
+    antiguedad = time.time() - anterior.stat().st_mtime
     if antiguedad < HORAS_PARA_CONSIDERAR_REEJECUCION * 3600:
-        bitacora.registrar("reejecucion_notebook", motivo=motivo or "(no indicado)", notebook=destino.name)
+        bitacora.registrar("reejecucion_notebook", motivo=motivo or "(no indicado)", notebook=anterior.name)
 
 
 def _leer(ruta: Path) -> dict:
@@ -364,9 +381,9 @@ def _copiar_a_descargas(pdf: Path) -> Path | None:
 
 
 def entregar(anio: int, comentario: Path | None = None, destino: Path | None = None) -> dict:
-    destino = destino or ruta_notebook(anio)
-    if not destino.exists():
-        raise InformeInvalido(f"No existe {destino}: correr `construir` primero.")
+    destino = destino or ultima_edicion(anio)
+    if destino is None or not destino.exists():
+        raise InformeInvalido(f"No hay ninguna edición de {anio} en {EDICIONES}: correr `construir` primero.")
     crudo = _leer(destino)
     if verificacion_notebook.celdas_con_error(crudo):
         raise InformeInvalido("El notebook tiene celdas con error: corregir y volver a `construir` antes de entregar.")
@@ -384,6 +401,7 @@ def entregar(anio: int, comentario: Path | None = None, destino: Path | None = N
     salida_pdf = _generar_pdf(salida_html, anio, destino.with_suffix(".pdf"))
     copia = _copiar_a_descargas(salida_pdf)
     return {
+        "edicion": destino.stem,
         "pdf_path": str(salida_pdf.resolve()),
         "html_path": str(salida_html.resolve()),
         "copia_descargas": str(copia) if copia else None,
@@ -416,8 +434,9 @@ def main(argumentos: list[str] | None = None) -> int:
     c.add_argument("--extra", type=Path, default=None, help="archivo .py con celdas_extra y/o celdas_finales")
     c.add_argument("--motivo", default=None, help="por qué se vuelve a construir el mismo año (si aplica)")
 
-    e = sub.add_parser("entregar", help="genera HTML y PDF del notebook ya construido (el resumen ya está en él)")
+    e = sub.add_parser("entregar", help="genera HTML y PDF de la última edición construida del año")
     e.add_argument("--anio", type=int, required=True)
+    e.add_argument("--edicion", type=Path, default=None, help="opcional: notebook de una edición concreta (por defecto, la más reciente del año)")
     e.add_argument("--comentario", type=Path, default=None,
                    help="opcional: archivo markdown con un comentario adicional; cada cifra se valida contra los resultados")
 
@@ -426,7 +445,7 @@ def main(argumentos: list[str] | None = None) -> int:
         if args.comando == "construir":
             resultado = construir(args.anio, args.metricas, args.bloques, args.extra, args.motivo)
         else:
-            resultado = entregar(args.anio, args.comentario)
+            resultado = entregar(args.anio, args.comentario, args.edicion)
     except InformeInvalido as e:
         print(f"INFORME NO GENERADO: {e}", file=sys.stderr)
         return 2

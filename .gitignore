@@ -13,9 +13,11 @@ data/**/*.pdf
 notebooks/*.ipynb
 notebooks/*.html
 notebooks/*.pdf
-# Cifras que deja el notebook al ejecutarse (para el resumen analítico):
-# dependen de los datos de cada usuario, igual que el notebook.
+# Cifras que deja el notebook al ejecutarse: dependen de los datos de cada
+# usuario, igual que el notebook.
 notebooks/_cifras_*.json
+# Ediciones generadas por el flujo guiado (una por corrida, con fecha y hora).
+notebooks/ediciones/
 
 # Ruta al Python de esta máquina en particular (la genera instalar.bat) -
 # distinta en cada computadora, nunca se comparte entre usuarios.

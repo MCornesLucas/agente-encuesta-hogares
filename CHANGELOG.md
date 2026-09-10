@@ -10,6 +10,19 @@ análisis original de 2019 hasta la introducción del catálogo por bloques
 opt-in) — el historial completo de esos cambios está en `git log`. Este
 changelog arranca en la versión donde se formalizó el versionado.
 
+## [0.15.1] — 2026-09-09
+
+### Cambiado
+
+- **Cada corrida es una edición propia.** El informe se escribe en
+  `notebooks/ediciones/Informe_ECH_<año>_<fecha-hora>.ipynb/.html/.pdf`,
+  con el instante de la corrida en el nombre: dos corridas nunca se pisan,
+  del mismo año o de años distintos, y ya no hace falta el respaldo
+  "(anterior)". `entregar` toma la edición más reciente del año (o la que
+  se indique con `--edicion`); la copia en Descargas lleva el mismo
+  nombre. Volver a construir el mismo año dentro de las dos horas sigue
+  registrándose como `reejecucion_notebook` con su motivo.
+
 ## [0.15.0] — 2026-09-09
 
 ### Cambiado

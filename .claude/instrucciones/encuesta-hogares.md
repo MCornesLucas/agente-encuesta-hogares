@@ -717,10 +717,11 @@ Qué hace el comando por dentro (no hay que repetir nada de esto a mano):
 1. Arma la estructura fija del informe con
    `notebook_builder.construir_celdas_notebook` (introducción, preparación
    de datos, un tramo por tema con su presentación y sus términos, las
-   cinco partes de cada métrica, la nota metodológica) y la escribe en
-   **exactamente `notebooks/Informe_ECH_{año}.ipynb`** — sin sufijos ni
-   variantes: es lo que hace que dos años nunca choquen y que el respaldo
-   "(anterior)" se dispare solo cuando se repite el mismo año.
+   cinco partes de cada métrica, la nota metodológica) y la escribe como
+   una edición nueva en **`notebooks/ediciones/Informe_ECH_{año}_<fecha-hora>.ipynb`**
+   (la fecha y la hora las pone el comando): dos corridas nunca se pisan,
+   del mismo año o de años distintos, y no hace falta respaldar nada. No
+   elegir la ruta a mano.
 2. **Verifica el notebook antes de ejecutarlo**: gráficas que se
    duplicarían (variable suelta después de `viz.plot_...`), métricas sin
    gráfica o cuya justificación no cita a un autor de
@@ -1031,15 +1032,14 @@ solo comando genera los dos archivos:
 ./run_python.bat -m encuesta_hogares.generar_informe entregar --anio {año}
 ```
 
-Por dentro: toma el notebook ya construido (el resumen analítico y las
-fuentes ya están en él); genera el HTML sin código
-(`notebooks/Informe_ECH_{año}.html`, con su título corregido); genera el
-PDF con portada y hoja de estilos de impresión, imprimiendo con Chromium
-vía Playwright (nunca `nbconvert --to pdf`, que depende de LaTeX), en
-`notebooks/Informe_ECH_{año}.pdf`; y deja una copia en la carpeta de
-Descargas. Los archivos anteriores del mismo año quedan respaldados como
-"(anterior)". Imprime un JSON con `pdf_path` y `html_path`: esas son las
-dos rutas absolutas que van a `mostrar_finalizacion()`.
+Por dentro: toma la edición más reciente del año en `notebooks/ediciones/`
+(el resumen analítico y las fuentes ya están en ella); genera el HTML sin
+código con su título corregido y el PDF con portada y hoja de estilos de
+impresión, imprimiendo con Chromium vía Playwright (nunca `nbconvert --to
+pdf`, que depende de LaTeX), ambos con el mismo nombre de la edición; y
+deja una copia del PDF en la carpeta de Descargas. Imprime un JSON con
+`pdf_path` y `html_path`: esas son las dos rutas absolutas que van a
+`mostrar_finalizacion()`.
 
 **Nunca usar `start` desde la terminal para "abrir" el informe, ni para
 el PDF ni para el HTML** — en la práctica resultó poco confiable (llegó a

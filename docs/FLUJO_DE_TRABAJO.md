@@ -35,8 +35,7 @@ ejecutar* el trabajo una vez que las reglas ya están claras.
    ./run_python.bat -m encuesta_hogares.generar_informe entregar --anio <año>
    ```
    Genera el HTML sin código (`generacion_html`) y el PDF (`conversion_pdf`,
-   ver sección 2) con copia en Descargas, respaldando los archivos
-   anteriores del mismo año como "(anterior)". `--comentario <markdown>` es
+   ver sección 2) con copia en Descargas. `--comentario <markdown>` es
    opcional y valida cada cifra que cite contra los resultados ejecutados.
 6. Para cualquier gráfica nueva o modificada de una plantilla del
    catálogo, extraer el PNG embebido del output de la celda y mirarlo —
@@ -45,9 +44,11 @@ ejecutar* el trabajo una vez que las reglas ya están claras.
    del scratchpad se hacen con Python (`pathlib`), nunca con un comodín
    en `rm`: la herramienta de Bash rechaza los patrones glob en
    operaciones de borrado.
-7. Los nombres son siempre exactamente `notebooks/Informe_ECH_<año>.ipynb`,
-   `.html` y `.pdf` — sin sufijos ni variantes, para que dos años nunca
-   choquen y el respaldo se dispare solo cuando se repite el mismo año.
+7. Cada corrida es una edición propia:
+   `notebooks/ediciones/Informe_ECH_<año>_<fecha-hora>.ipynb`, `.html` y
+   `.pdf`, con el instante de la corrida en el nombre — dos corridas nunca
+   se pisan y no hace falta respaldar nada. `entregar` toma la edición más
+   reciente del año (o la que se indique con `--edicion`).
 8. Si hay que volver a construir el mismo año tras una corrección, pasar
    `--motivo` a `construir`: queda en la bitácora como
    `reejecucion_notebook`.
@@ -89,8 +90,8 @@ Qué hace `entregar` (todo en `src/encuesta_hogares/generar_informe.py`):
    margen de `@page`, solo esas plantillas de Playwright — y márgenes
    20/16/18/18 mm), cronometrado como `conversion_pdf`, y borra el
    intermedio.
-5. El nombre del archivo es siempre exactamente `Informe_ECH_<año>.pdf`;
-   el anterior del mismo año queda como "(anterior)".
+5. El PDF lleva el mismo nombre que la edición
+   (`Informe_ECH_<año>_<fecha-hora>.pdf`), así nunca pisa a otro.
 6. Copia el PDF a la carpeta de Descargas del usuario (`Path.home() /
    "Downloads"`, igual en Windows y en Mac), respaldando también ahí el de
    una corrida anterior. Si esa carpeta no existe, lo informa en el JSON

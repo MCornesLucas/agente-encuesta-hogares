@@ -229,7 +229,7 @@ def test_entregar_exige_un_notebook_ejecutado_y_con_resumen(tmp_path):
 
 
 def test_main_devuelve_2_y_explica_cuando_el_informe_no_se_genera(tmp_path, capsys, monkeypatch):
-    monkeypatch.setattr(gi, "ruta_notebook", lambda anio: tmp_path / f"Informe_ECH_{anio}.ipynb")
+    monkeypatch.setattr(gi, "EDICIONES", tmp_path / "ediciones")
     codigo = gi.main(["entregar", "--anio", "2025"])
     assert codigo == 2
     assert "INFORME NO GENERADO" in capsys.readouterr().err
@@ -366,3 +366,43 @@ def test_el_resumen_ejecutado_tiene_que_dejar_texto():
                      _celda_code("_display(...)", [{"output_type": "display_data", "data": {"text/markdown": "**Hogares.** ..."}}])]}
     assert vn.resumen_sin_texto(con) == []
     assert vn.resumen_sin_texto({"cells": [_celda_md("### 1. Algo")]}) == []
+
+
+# --- ediciones ----------------------------------------------------------------
+
+
+def test_cada_corrida_es_una_edicion_con_fecha_y_hora(tmp_path, monkeypatch):
+    import datetime as dt
+    monkeypatch.setattr(gi, "EDICIONES", tmp_path / "ediciones")
+    momento = dt.datetime(2026, 9, 9, 17, 32)
+    assert gi.nombre_edicion(2025, momento) == "Informe_ECH_2025_20260909-1732"
+    assert gi.ruta_notebook(2025, momento) == tmp_path / "ediciones" / "Informe_ECH_2025_20260909-1732.ipynb"
+    assert gi.ultima_edicion(2025) is None
+    (tmp_path / "ediciones").mkdir()
+    vieja = tmp_path / "ediciones" / "Informe_ECH_2025_20260901-1000.ipynb"
+    nueva = tmp_path / "ediciones" / "Informe_ECH_2025_20260909-1732.ipynb"
+    otra = tmp_path / "ediciones" / "Informe_ECH_2024_20260909-1800.ipynb"
+    for ruta, mtime in ((vieja, 1_000), (nueva, 2_000), (otra, 3_000)):
+        ruta.write_text("{}", encoding="utf-8")
+        import os
+        os.utime(ruta, (mtime, mtime))
+    assert gi.ultima_edicion(2025) == nueva, "la más reciente del año, no la de otro año"
+
+
+def test_construir_escribe_en_ediciones_y_registra_la_reejecucion_del_mismo_anio(tmp_path, monkeypatch):
+    monkeypatch.setattr(gi, "EDICIONES", tmp_path / "ediciones")
+    registros = []
+    monkeypatch.setattr(gi.bitacora, "registrar", lambda tipo, **d: registros.append((tipo, d)))
+    monkeypatch.setattr(gi.bitacora, "medir_comando", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no ejecutar")))
+    # Una edición reciente del mismo año ya existe: construir de nuevo es una re-ejecución.
+    (tmp_path / "ediciones").mkdir()
+    (tmp_path / "ediciones" / "Informe_ECH_2025_20260909-1000.ipynb").write_text("{}", encoding="utf-8")
+    extra = tmp_path / "extra.py"
+    extra.write_text("from encuesta_hogares.notebook_builder import Celda\n"
+                     "celdas_extra = {1: [Celda(markdown='### 99. X\\n\\nP.', codigo='fig = viz.plot_x(df)\\nfig', markdown_final='(Tufte, 2001)')]}\n",
+                     encoding="utf-8")
+    with pytest.raises(gi.InformeInvalido):
+        gi.construir(2025, [1], ["brecha_digital"], extra=extra, motivo="prueba")
+    assert ("reejecucion_notebook", {"motivo": "prueba", "notebook": "Informe_ECH_2025_20260909-1000.ipynb"}) in registros
+    escritos = sorted(p.name for p in (tmp_path / "ediciones").glob("Informe_ECH_2025_*.ipynb"))
+    assert len(escritos) == 2 and all(n.startswith("Informe_ECH_2025_") for n in escritos), "la edición nueva no pisa la anterior"
