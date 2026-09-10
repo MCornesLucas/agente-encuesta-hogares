@@ -42,10 +42,12 @@ qué tema pertenecía cada una.
    primero que leía quien lo recibía.
 5. **Resumen analítico final**, organizado por los mismos bloques que terminó
    teniendo el informe, con cifras reales (nunca estimadas) y redactado para
-   un lector no técnico. Las cifras salen del archivo que el propio notebook
-   deja al ejecutarse (`notebooks/_cifras_Informe_ECH_<año>.json`) y cada una
-   se valida contra los resultados antes de entrar al informe; la lista de
-   fuentes de consulta de los bloques presentes se agrega automáticamente.
+   un lector no técnico. Lo arma el propio notebook: una frase por métrica
+   presente, evaluada sobre las variables que esa métrica calculó
+   (`notebook_builder._RESUMEN_POR_METRICA`), así el número del resumen es
+   el mismo que muestra la gráfica y ningún modelo redacta ni transcribe
+   cifras. La lista de fuentes de consulta de los bloques presentes se
+   agrega en el mismo paso.
 
 ### Las cinco partes de cada métrica
 

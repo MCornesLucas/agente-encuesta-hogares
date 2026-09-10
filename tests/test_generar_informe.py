@@ -172,7 +172,7 @@ def test_cargar_extras_exige_la_forma_correcta(tmp_path):
     assert gi._cargar_extras(None) == ({}, [])
 
 
-def _notebook_ejecutado_falso(ruta: Path, con_resumen_viejo=False) -> None:
+def _notebook_ejecutado_falso(ruta: Path, con_comentario_viejo=False) -> None:
     notebook = nbformat.v4.new_notebook()
     notebook.cells.append(nbformat.v4.new_markdown_cell("## Hogares"))
     notebook.cells.append(nbformat.v4.new_markdown_cell("### 8. Tipos de hogar\n\n**¿Qué pregunta responde?** X"))
@@ -181,47 +181,56 @@ def _notebook_ejecutado_falso(ruta: Path, con_resumen_viejo=False) -> None:
                      nbformat.v4.new_output("display_data", data={"image/png": "AAAA"})]
     notebook.cells.append(celda)
     notebook.cells.append(nbformat.v4.new_markdown_cell("Justificación (Cleveland & McGill, 1984)."))
-    if con_resumen_viejo:
-        notebook.cells.append(nbformat.v4.new_markdown_cell("## Resumen analítico final"))
-        notebook.cells.append(nbformat.v4.new_markdown_cell("Texto viejo con 99,9%."))
+    notebook.cells.append(nbformat.v4.new_markdown_cell("## Resumen analítico final"))
+    resumen = nbformat.v4.new_code_cell("_display(_Markdown(_res.armar_markdown(_frases)))")
+    resumen.outputs = [nbformat.v4.new_output("display_data", data={"text/markdown": "**Hogares.** El 41,3% ..."})]
+    notebook.cells.append(resumen)
+    if con_comentario_viejo:
+        notebook.cells.append(nbformat.v4.new_markdown_cell("### Comentario\n\nTexto viejo con 99,9%."))
     nbformat.write(notebook, str(ruta))
     nb.ruta_cifras(ruta).write_text(json.dumps({"tipos": [{"tipo_hogar": "Nuclear", "pct": 41.27}]}), encoding="utf-8")
 
 
-def test_entregar_agrega_el_resumen_verificado_y_las_fuentes_del_bloque(tmp_path):
+def test_el_comentario_opcional_se_valida_y_reemplaza_al_anterior(tmp_path):
     ruta = tmp_path / "Informe_ECH_2025.ipynb"
-    _notebook_ejecutado_falso(ruta, con_resumen_viejo=True)
-    bloques = gi._agregar_resumen(ruta, "Los hogares nucleares son el 41,3% del total (23.544 hogares).")
+    _notebook_ejecutado_falso(ruta, con_comentario_viejo=True)
+    bloques = gi._agregar_comentario(ruta, "Los hogares nucleares son el 41,3% del total (23.544 hogares).")
     assert bloques == ["hogares"]
     notebook = nbformat.read(str(ruta), as_version=4)
     textos = [c.source for c in notebook.cells if c.cell_type == "markdown"]
-    assert textos.count("## Resumen analítico final") == 1, "el resumen viejo se reemplaza, no se duplica"
+    assert sum(1 for t in textos if t.startswith("### Comentario")) == 1, "el comentario viejo se reemplaza, no se duplica"
     assert not any("99,9%" in t for t in textos)
     assert any("41,3%" in t for t in textos)
-    assert any(t.startswith("### Fuentes de consulta para alineación de métricas") and "CEPALSTAT" in t for t in textos)
 
 
-def test_entregar_rechaza_una_cifra_que_no_esta_en_los_resultados(tmp_path):
+def test_el_comentario_rechaza_una_cifra_que_no_esta_en_los_resultados(tmp_path):
     ruta = tmp_path / "Informe_ECH_2025.ipynb"
     _notebook_ejecutado_falso(ruta)
     with pytest.raises(gi.InformeInvalido, match="57,2%"):
-        gi._agregar_resumen(ruta, "Los hogares nucleares son el 57,2% del total.")
+        gi._agregar_comentario(ruta, "Los hogares nucleares son el 57,2% del total.")
     with pytest.raises(gi.InformeInvalido, match="sin completar"):
-        gi._agregar_resumen(ruta, "Resumen (pendiente).")
+        gi._agregar_comentario(ruta, "Comentario (pendiente).")
 
 
-def test_entregar_exige_un_notebook_ejecutado(tmp_path):
+def test_entregar_exige_un_notebook_ejecutado_y_con_resumen(tmp_path):
     ruta = tmp_path / "Informe_ECH_2025.ipynb"
     notebook = nbformat.v4.new_notebook()
     notebook.cells.append(nbformat.v4.new_code_cell("x = 1"))
     nbformat.write(notebook, str(ruta))
     with pytest.raises(gi.InformeInvalido, match="no está ejecutado"):
-        gi._agregar_resumen(ruta, "Texto.")
+        gi.entregar(2025, destino=ruta)
+    # Ejecutado pero con el resumen sin texto: tampoco.
+    notebook.cells[0].outputs = [nbformat.v4.new_output("stream", name="stdout", text="1\n")]
+    notebook.cells.append(nbformat.v4.new_markdown_cell("## Resumen analítico final"))
+    notebook.cells.append(nbformat.v4.new_code_cell("_display(...)"))
+    nbformat.write(notebook, str(ruta))
+    with pytest.raises(gi.InformeInvalido, match="resumen analítico"):
+        gi.entregar(2025, destino=ruta)
 
 
 def test_main_devuelve_2_y_explica_cuando_el_informe_no_se_genera(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(gi, "ruta_notebook", lambda anio: tmp_path / f"Informe_ECH_{anio}.ipynb")
-    codigo = gi.main(["entregar", "--anio", "2025", "--resumen", str(tmp_path / "no_existe.md")])
+    codigo = gi.main(["entregar", "--anio", "2025"])
     assert codigo == 2
     assert "INFORME NO GENERADO" in capsys.readouterr().err
 
@@ -311,3 +320,49 @@ def test_construir_corta_si_las_cifras_ejecutadas_no_son_plausibles(tmp_path, mo
     hallazgos = gi._revisar_plausibilidad(ruta_cifras)
     assert hallazgos and "tasa_empleo" in hallazgos[0]
     assert gi._revisar_plausibilidad(tmp_path / "no_existe.json") == []
+
+
+# --- resumen analítico automático ---------------------------------------------
+
+
+def test_toda_metrica_del_catalogo_tiene_su_plantilla_de_resumen_y_compila():
+    assert set(nb._RESUMEN_POR_METRICA) == set(vc.MANIFEST)
+    for numero, expresion in nb._RESUMEN_POR_METRICA.items():
+        compile(expresion, f"resumen_{numero}", "eval")
+
+
+def test_la_celda_del_resumen_solo_incluye_las_metricas_presentes_y_las_fuentes_de_sus_bloques():
+    celdas = nb.celdas_resumen_analitico([1, 8, 28])
+    assert celdas[0].markdown.startswith("## Resumen analítico final")
+    codigo = celdas[0].codigo
+    compile(codigo, "resumen", "exec")
+    assert codigo.count("_frases.setdefault(") == 3
+    assert "'Brecha Digital'" in codigo and "'Hogares'" in codigo and "'Empleo'" in codigo
+    assert "RuntimeError" in codigo, "una plantilla que falla corta el informe, no deja un hueco"
+    assert celdas[1].markdown.startswith("### Fuentes de consulta para alineación de métricas")
+    assert "KILM" in celdas[1].markdown and "CEPALSTAT" in celdas[1].markdown
+    # Solo FIES: sin fuentes.
+    assert len(nb.celdas_resumen_analitico([21])) == 1
+
+
+def test_los_helpers_del_resumen_formatean_a_la_uruguaya_y_no_eligen_en_silencio():
+    import pandas as pd
+    from encuesta_hogares import resumen as res
+    assert res.fmt(45.31) == "45,3" and res.fmt(0.55, 2) == "0,55" and res.fmt(23544) == "23.544"
+    assert res.fmt(1234.5, 1) == "1.234,5" and res.fmt(None) == "s/d"
+    tabla = pd.DataFrame({"nivel": ["1-Bajo", "5-Alto"], "pct": [55.68, 6.76]})
+    assert res.valor(tabla, "pct", nivel="1-Bajo") == 55.68
+    with pytest.raises(ValueError, match="hay 0"):
+        res.valor(tabla, "pct", nivel="9-Otro")
+    assert res.brecha(tabla, "nivel", "pct", "La precariedad") == "La precariedad va de 6,8% (Alto) a 55,7% (Bajo)"
+    assert res.etiqueta("TACUAREMBÓ") == "Tacuarembó" and res.etiqueta("4. Terciario completo") == "terciario completo"
+    assert res.armar_markdown({"Hogares": ["Frase uno", "Frase dos."], "Vacío": []}) == "**Hogares.** Frase uno. Frase dos."
+
+
+def test_el_resumen_ejecutado_tiene_que_dejar_texto():
+    sin = {"cells": [_celda_md("## Resumen analítico final"), _celda_code("_display(...)", [])]}
+    assert vn.resumen_sin_texto(sin) == ["celda 1: el resumen analítico no produjo ningún texto"]
+    con = {"cells": [_celda_md("## Resumen analítico final"),
+                     _celda_code("_display(...)", [{"output_type": "display_data", "data": {"text/markdown": "**Hogares.** ..."}}])]}
+    assert vn.resumen_sin_texto(con) == []
+    assert vn.resumen_sin_texto({"cells": [_celda_md("### 1. Algo")]}) == []

@@ -27,16 +27,17 @@ ejecutar* el trabajo una vez que las reglas ya están claras.
    resultado (celdas con error, gráficas sin imagen, cifras imposibles
    según `verificacion_plausibilidad`) y deja las cifras de cada métrica en
    `notebooks/_cifras_Informe_ECH_<año>.json`.
-5. Redactar el resumen analítico leyendo ese JSON (nunca recalculando ni
-   de memoria) y entregarlo:
+5. El resumen analítico final lo arma el propio notebook en el paso
+   anterior: una frase por métrica (`notebook_builder._RESUMEN_POR_METRICA`,
+   helpers en `resumen.py`) evaluada sobre las variables de la métrica, más
+   las fuentes de consulta de los bloques presentes. Después, entregar:
    ```bash
-   ./run_python.bat -m encuesta_hogares.generar_informe entregar --anio <año> --resumen <markdown>
+   ./run_python.bat -m encuesta_hogares.generar_informe entregar --anio <año>
    ```
-   Valida cada cifra del resumen contra los resultados ejecutados, agrega
-   el resumen y las fuentes de consulta al notebook sin volver a
-   ejecutarlo, genera el HTML sin código (`generacion_html`) y el PDF
-   (`conversion_pdf`, ver sección 2) con copia en Descargas, respaldando
-   los archivos anteriores del mismo año como "(anterior)".
+   Genera el HTML sin código (`generacion_html`) y el PDF (`conversion_pdf`,
+   ver sección 2) con copia en Descargas, respaldando los archivos
+   anteriores del mismo año como "(anterior)". `--comentario <markdown>` es
+   opcional y valida cada cifra que cite contra los resultados ejecutados.
 6. Para cualquier gráfica nueva o modificada de una plantilla del
    catálogo, extraer el PNG embebido del output de la celda y mirarlo —
    no asumir que "si no tiró error, se ve bien". Revisar que los números

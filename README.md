@@ -209,10 +209,10 @@ esa métrica del informe.
 instantáneo.** Las 42 métricas fijas del catálogo se arman y se calculan
 de forma mecánica: con los datos reales de 2025, el notebook completo de
 41 métricas se ejecuta en unos 25 segundos y el HTML y el PDF se generan
-en unos 15 segundos más. Lo que agrega tiempo es la redacción del resumen
-analítico a partir de las cifras calculadas y cualquier comparación entre
-años o métrica a medida que se haya pedido — esas dos últimas las sigue
-escribiendo el modelo en el momento, no son mecánicas. Que la terminal
+en unos 15 segundos más; el resumen analítico final también se arma
+solo, con las cifras de cada métrica. Lo que agrega tiempo es cualquier
+comparación entre años o métrica a medida que se haya pedido — esas dos las
+sigue escribiendo el modelo en el momento, no son mecánicas. Que la terminal
 permanezca sin novedades visibles durante un rato es esperable, no indica
 un error.
 

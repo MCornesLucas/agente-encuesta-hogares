@@ -275,8 +275,29 @@ def graficas_faltantes(nb: dict) -> list[str]:
     return problemas
 
 
+def resumen_sin_texto(nb: dict) -> list[str]:
+    """El «Resumen analítico final» lo arma una celda de código dentro del
+    notebook; si existe el encabezado, la celda que sigue tiene que haber
+    dejado un output de markdown con texto."""
+    celdas = nb.get("cells", [])
+    for i, celda in enumerate(celdas):
+        if celda.get("cell_type") == "markdown" and _fuente(celda).strip().startswith("## Resumen analítico final"):
+            siguiente = celdas[i + 1] if i + 1 < len(celdas) else None
+            if siguiente is None or siguiente.get("cell_type") != "code":
+                return [f"celda {i}: el resumen analítico no tiene su celda de código a continuación"]
+            textos = [
+                "".join(s.get("data", {}).get("text/markdown", "")) if isinstance(s.get("data", {}).get("text/markdown", ""), list)
+                else s.get("data", {}).get("text/markdown", "")
+                for s in siguiente.get("outputs", []) or []
+            ]
+            if not any(t.strip() for t in textos):
+                return [f"celda {i + 1}: el resumen analítico no produjo ningún texto"]
+            return []
+    return []
+
+
 def verificar_despues_de_ejecutar(nb: dict) -> list[str]:
-    return celdas_con_error(nb) + graficas_faltantes(nb)
+    return celdas_con_error(nb) + graficas_faltantes(nb) + resumen_sin_texto(nb)
 
 
 # ---------------------------------------------------------------------------

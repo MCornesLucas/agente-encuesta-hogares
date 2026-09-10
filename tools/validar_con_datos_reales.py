@@ -518,7 +518,10 @@ def _correr_plantillas_del_catalogo(anio: str) -> None:
     # fallar por la codificación de la consola sin que sea un error de
     # verdad de la plantilla.
     ruta_tmp = config.PROJECT_ROOT / "notebooks" / f"_validacion_notebook_builder_{anio}.ipynb"
-    # Con la celda de cifras al final, igual que lo arma generar_informe.construir.
+    # Con el resumen analítico y la celda de cifras al final, igual que lo
+    # arma generar_informe.construir: así las plantillas de frase de todas
+    # las métricas disponibles se evalúan contra los datos reales del año.
+    celdas.extend(notebook_builder.celdas_resumen_analitico(metricas))
     celdas.append(notebook_builder.celda_cifras(ruta_tmp))
     notebook_builder.escribir_notebook(celdas, ruta_tmp)
     nb = nbformat.read(str(ruta_tmp), as_version=4)

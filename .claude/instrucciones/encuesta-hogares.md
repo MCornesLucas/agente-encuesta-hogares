@@ -737,9 +737,11 @@ Qué hace el comando por dentro (no hay que repetir nada de esto a mano):
    y rangos anchos anclados en magnitudes del INE
    (`verificacion_plausibilidad`). No se compara contra el INE: se
    verifica que el resultado no sea un disparate.
-5. Deja en `notebooks/_cifras_Informe_ECH_{año}.json` todas las tablas y
-   valores que calcularon las métricas — de ahí salen los números del
-   resumen analítico (paso 8).
+5. Arma el "Resumen analítico final" dentro del notebook (una frase por
+   métrica, con las cifras de la propia métrica) y la sección de fuentes de
+   consulta de los bloques presentes, y deja en
+   `notebooks/_cifras_Informe_ECH_{año}.json` todas las tablas y valores
+   calculados, que el pipeline usa para la verificación de plausibilidad.
 
 Al terminar imprime un JSON con las rutas. **Si imprime `INFORME NO
 GENERADO` (código de salida 2)**: leer el motivo, corregir la causa — en
@@ -865,27 +867,21 @@ una diferencia entre dos grupos específicos (para estas últimas, usar
 en vez de un `print()` con la resta ya calculada).
 
 **La última sección del informe es siempre el "Resumen analítico final"
-(sección 1 de `docs/METODOLOGIA.md`), redactado con las cifras reales de
-esta corrida — nunca como texto pendiente ni como placeholder.** Se
-escribe después de `construir` (paso 5) y antes de `entregar` (paso 8):
+(sección 1 de `docs/METODOLOGIA.md`) y la arma el propio notebook**: una
+frase por métrica presente, evaluada sobre las variables que esa métrica
+calculó (`notebook_builder._RESUMEN_POR_METRICA`), organizada por bloque,
+más la sección "Fuentes de consulta para alineación de métricas" con las
+fuentes de los bloques presentes. Nada de esto se redacta ni se
+transcribe a mano: el número del resumen es el mismo que muestra la
+gráfica. No leer el JSON de cifras (`notebooks/_cifras_Informe_ECH_{año}.json`)
+para escribir texto; ese archivo lo usa el pipeline para la plausibilidad
+y para validar un comentario opcional.
 
-1. Leer (con `Read`, una sola vez) `notebooks/_cifras_Informe_ECH_{año}.json`:
-   ahí están, tabla por tabla, los valores que calculó cada métrica. No
-   recalcular nada con Python ni sacar números de memoria.
-2. Escribir con `Write`, en la carpeta de scratchpad, un archivo markdown
-   con 3-5 párrafos cortos organizados por los bloques que quedaron en el
-   informe, en lenguaje simple, citando los porcentajes puntuales **tal
-   cual figuran en el JSON** (mismos decimales, o redondeados). Sin
-   encabezado propio: el título de la sección lo pone `entregar`.
-3. Pasarlo a `entregar` con `--resumen`. El comando valida cada cifra
-   contra los resultados ejecutados y rechaza el resumen si alguna no
-   coincide — en ese caso corregir el número en el archivo y volver a
-   correr `entregar`, nada más.
-
-La sección **"Fuentes de consulta para alineación de métricas"** la agrega
-`entregar` sola, con las fuentes de los bloques presentes (Brecha Digital,
-Hogares, Territorio, Vivienda, Empleo, Seguridad y Victimización; FIES no
-lleva). No escribirla a mano.
+Si la persona pidió expresamente un comentario adicional, se escribe con
+`Write` en un archivo markdown (sin encabezado) y se pasa a `entregar`
+con `--comentario`: cada cifra que cite se valida contra los resultados
+ejecutados y, si alguna no coincide, el comando lo rechaza. En una corrida
+normal no hay comentario.
 
 ### 6. Evaluar y construir las métricas propuestas por el usuario
 
@@ -1029,15 +1025,14 @@ registrar la sugerencia con `bitacora.sugerir_catalogo(...)`, como siempre.
 
 **Siempre se generan los dos formatos, sin excepción y sin preguntar** —
 el formulario del catálogo (paso 4) ya no pregunta preferencia de PDF. Un
-solo comando agrega el resumen analítico verificado y genera los dos
-archivos:
+solo comando genera los dos archivos:
 
 ```bash
-./run_python.bat -m encuesta_hogares.generar_informe entregar --anio {año} --resumen "<ruta al markdown del resumen>"
+./run_python.bat -m encuesta_hogares.generar_informe entregar --anio {año}
 ```
 
-Por dentro: agrega el resumen y la lista de fuentes de consulta al final
-del notebook sin volver a ejecutarlo; genera el HTML sin código
+Por dentro: toma el notebook ya construido (el resumen analítico y las
+fuentes ya están en él); genera el HTML sin código
 (`notebooks/Informe_ECH_{año}.html`, con su título corregido); genera el
 PDF con portada y hoja de estilos de impresión, imprimiendo con Chromium
 vía Playwright (nunca `nbconvert --to pdf`, que depende de LaTeX), en

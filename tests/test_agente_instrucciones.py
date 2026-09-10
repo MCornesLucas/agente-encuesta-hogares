@@ -223,6 +223,6 @@ def test_los_pasos_5_y_8_usan_el_pipeline_y_no_scripts_sueltos():
     texto = AGENTE_MD.read_text(encoding="utf-8")
     assert "encuesta_hogares.generar_informe construir --anio" in texto
     assert "encuesta_hogares.generar_informe entregar --anio" in texto
-    assert "_cifras_Informe_ECH_{año}.json" in texto, "el resumen se redacta desde el archivo de cifras"
+    assert "_RESUMEN_POR_METRICA" in texto, "el resumen lo arma el notebook, no el modelo"
     paso_5 = texto.split("### 5. ")[1].split("### Las cinco partes")[0]
     assert "paso5_checkpoint" not in paso_5 and "medir_comando" not in paso_5

@@ -1547,13 +1547,122 @@ def fuentes_de_consulta(bloques: list[str]) -> list[str]:
     return vistas
 
 
-def celdas_resumen_final(markdown_resumen: str, bloques: list[str]) -> list[Celda]:
-    """La sección que cierra el informe: el resumen redactado (markdown ya
-    escrito, con cifras verificadas por `generar_informe.entregar`) y la
+def celda_comentario(markdown_comentario: str) -> Celda:
+    """Comentario opcional que `generar_informe.entregar --comentario`
+    agrega después del resumen automático, con cada cifra verificada
+    contra los resultados ejecutados. No reemplaza al resumen."""
+    return Celda(markdown="### Comentario\n\n" + markdown_comentario.strip())
+
+# ============================================================================
+# Resumen analítico final, armado dentro del notebook.
+#
+# Una frase por métrica del catálogo, escrita UNA vez acá como expresión de
+# Python que se evalúa en el kernel sobre las variables que la propia
+# métrica dejó definidas (`_res` es `encuesta_hogares.resumen`). El número
+# que dice el resumen es, por construcción, el mismo que muestra la
+# gráfica: ningún modelo redacta ni transcribe cifras, y el texto es
+# idéntico corrida a corrida. Si una plantilla falla (una columna cambió
+# de nombre, una categoría no existe ese año), la celda levanta un error
+# con el número de la métrica y el pipeline no entrega el informe —
+# preferible a un resumen con un hueco silencioso.
+#
+# Estilo: lenguaje simple, sin jerga; "ponderado" ya lo explica la nota
+# metodológica. Los porcentajes se formatean con coma decimal.
+# ============================================================================
+
+_RESUMEN_POR_METRICA: dict[int, str] = {
+    1: ('f"El acceso a internet en los hogares de Montevideo sube con el nivel económico: "'
+        'f"{_f(_v(brecha_nivel_economico, \'pct_penetracion\', nivel_economico=\'1-Bajo\', tecnologia=\'Internet\'))}% "'
+        'f"en el nivel bajo frente a {_f(_v(brecha_nivel_economico, \'pct_penetracion\', nivel_economico=\'5-Alto\', tecnologia=\'Internet\'))}% en el alto"'),
+    2: ('_b(brecha_cohorte[brecha_cohorte[\'tecnologia\'] == \'Internet\'], \'cohorte\', \'pct_penetracion\', '
+        '\'Según la generación de quien encabeza el hogar, el acceso a internet\')'),
+    3: ('f"La conexión solo por celular alcanza al {_f(calidad_nivel_economico.loc[\'1-Bajo\', \'Solo móvil\'])}% de los hogares "'
+        'f"del nivel económico bajo y al {_f(calidad_nivel_economico.loc[\'5-Alto\', \'Solo móvil\'])}% del alto"'),
+    4: ('f"Con jefatura masculina, el {_f(_v(brecha_jefatura, \'pct_penetracion\', jefe_sexo=\'1-Hombre\', tecnologia=\'Internet\'))}% de los hogares tiene internet; "'
+        'f"con jefatura femenina, el {_f(_v(brecha_jefatura, \'pct_penetracion\', jefe_sexo=\'2-Mujer\', tecnologia=\'Internet\'))}%"'),
+    5: ('f"El índice de acceso digital (cantidad de tecnologías en el hogar) promedia "'
+        'f"{_f(_v(indice_acceso_nivel, \'indice_promedio\', nivel_economico=\'1-Bajo\'), 2)} en el nivel económico bajo y "'
+        'f"{_f(_v(indice_acceso_nivel, \'indice_promedio\', nivel_economico=\'5-Alto\'), 2)} en el alto"'),
+    6: '_b(adopcion_tablet_nivel, \'nivel_economico\', \'pct_con_tablet\', \'Entre los hogares con jefe o jefa de 65 años o más, la tenencia de una tablet del Plan Ibirapitá\')',
+    7: 'f"El {_f(pobreza[\'pct_pobres\'])}% de los hogares de Montevideo está en situación de pobreza y el {_f(pobreza[\'pct_indigentes\'])}% en indigencia"',
+    8: 'f"El {_f(jefatura[\'pct_jefatura_femenina\'])}% de los hogares del país con jefatura identificada tiene una jefa mujer"',
+    9: '_b(hacinamiento_nivel, \'nivel_economico\', \'pct_hacinamiento\', \'El hacinamiento en Montevideo\')',
+    10: ('f"El tipo de hogar más frecuente es el {tipos_hogar_resumen.loc[tipos_hogar_resumen[\'pct_hogares\'].idxmax(), \'tipo_hogar\'].lower()} "'
+         'f"({_f(tipos_hogar_resumen[\'pct_hogares\'].max())}% de los hogares)"'),
+    11: '_b(dependencia_depto, \'departamento\', \'razon_dependencia\', \'La razón de dependencia demográfica (personas menores de 15 o de 65 y más por cada 100 en edad activa)\', unidad=\'\')',
+    12: 'f"El {_f(unipersonales_mayores[\'pct_unipersonales_mayores\'])}% de los hogares unipersonales corresponde a personas de 65 años o más"',
+    13: ('f"En el índice de desarrollo territorial (0 a 1), el departamento mejor posicionado es {_res.etiqueta(indice_territorial.index[0])} "'
+         'f"({_f(indice_territorial[\'indice\'].iloc[0], 2)}) y el más rezagado {_res.etiqueta(indice_territorial.index[-1])} ({_f(indice_territorial[\'indice\'].iloc[-1], 2)})"'),
+    14: ('f"El componente que más separa a los departamentos entre sí es «{(componentes_territorio.max() - componentes_territorio.min()).idxmax()}»"'),
+    15: 'f"La brecha entre el mejor y el peor departamento del índice territorial es de {_f(brecha_territorial, 2)} puntos"',
+    16: 'f"El {_f(precariedad[\'pct_con_carencia\'])}% de los hogares del país vive en una vivienda con al menos una carencia estructural"',
+    17: ('f"La precariedad de la vivienda alcanza al {_f(_v(precariedad_nivel, \'pct_precariedad\', nivel_economico=\'1-Bajo\'))}% de los hogares del nivel económico bajo "'
+         'f"y al {_f(_v(precariedad_nivel, \'pct_precariedad\', nivel_economico=\'5-Alto\'))}% del alto"'),
+    18: '_b(precariedad_depto, \'departamento\', \'pct_precariedad\', \'Por departamento, la precariedad de la vivienda\')',
+    19: 'f"La diferencia de precariedad entre el nivel económico bajo y el alto es de {_f(brecha_precariedad)} puntos porcentuales"',
+    20: 'f"La carencia estructural más frecuente es «{carencias_frecuentes.iloc[0][\'carencia\'].lower()}», presente en el {_f(carencias_frecuentes.iloc[0][\'pct_hogares\'])}% de los hogares"',
+    21: 'f"El {_f(prevalencia_fies[\'moderada_o_severa\'])}% de los hogares vive inseguridad alimentaria moderada o severa, y el {_f(prevalencia_fies[\'severa\'])}% severa (calculado sobre la submuestra de hogares que respondió el módulo)"',
+    22: ('f"La inseguridad alimentaria moderada o severa afecta al {_f(_v(inseguridad_quintil, \'pct_inseguridad\', quintil_ingreso=\'Quintil 1\'))}% de los hogares del quintil de menores ingresos "'
+         'f"y al {_f(_v(inseguridad_quintil, \'pct_inseguridad\', quintil_ingreso=\'Quintil 5\'))}% del de mayores"'),
+    23: ('f"La inseguridad alimentaria moderada o severa es de {_f(_v(inseguridad_region, \'pct_inseguridad\', region=\'Montevideo\'))}% en Montevideo "'
+         'f"y de {_f(_v(inseguridad_region, \'pct_inseguridad\', region=\'Interior\'))}% en el interior"'),
+    24: 'f"Entre el quintil 1 y el quintil 5 la diferencia de inseguridad alimentaria es de {_f(diferencia_quintiles)} puntos porcentuales"',
+    25: ('f"La inseguridad alimentaria severa llega al {_f(_v(inseguridad_severa_quintil, \'pct_inseguridad\', quintil_ingreso=\'Quintil 1\'))}% en el quintil 1 "'
+         'f"y al {_f(_v(inseguridad_severa_quintil, \'pct_inseguridad\', quintil_ingreso=\'Quintil 5\'))}% en el quintil 5"'),
+    26: '_b(inseguridad_menores18, \'tiene_menores_18\', \'pct_inseguridad\', \'Según haya o no menores de 18 años en el hogar, la inseguridad alimentaria\')',
+    27: '_b(inseguridad_menores6, \'tiene_menores_6\', \'pct_inseguridad\', \'Según haya o no niños de 0 a 5 años en el hogar, la inseguridad alimentaria\')',
+    28: ('f"La tasa de actividad promedio del año fue {_f(tasas_nacionales[\'tasa_actividad\'])}%, la de empleo {_f(tasas_nacionales[\'tasa_empleo\'])}% "'
+         'f"y la de desempleo {_f(tasas_nacionales[\'tasa_desempleo\'])}%"'),
+    29: ('f"La tasa de empleo fue {_f(_v(tasas_sexo, \'tasa_empleo\', sexo_grupo=\'1-Hombre\'))}% entre los hombres y {_f(_v(tasas_sexo, \'tasa_empleo\', sexo_grupo=\'2-Mujer\'))}% entre las mujeres; "'
+         'f"el desempleo, {_f(_v(tasas_sexo, \'tasa_desempleo\', sexo_grupo=\'1-Hombre\'))}% y {_f(_v(tasas_sexo, \'tasa_desempleo\', sexo_grupo=\'2-Mujer\'))}%"'),
+    30: '_b(desempleo_depto, \'departamento\', \'pct_promedio\', \'La tasa de desempleo por departamento\')',
+    31: 'f"La informalidad alcanza al {_f(_v(informalidad_sexo, \'pct_promedio\', sexo_grupo=\'1-Hombre\'))}% de los hombres ocupados y al {_f(_v(informalidad_sexo, \'pct_promedio\', sexo_grupo=\'2-Mujer\'))}% de las mujeres ocupadas"',
+    32: '_b(informalidad_educacion, \'nivel_educativo\', \'pct_promedio\', \'Según el nivel educativo, la informalidad\')',
+    33: 'f"El subempleo afecta al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'1-Hombre\'))}% de los hombres ocupados y al {_f(_v(subempleo_sexo, \'pct_promedio\', sexo_grupo=\'2-Mujer\'))}% de las mujeres ocupadas"',
+    34: ('f"El desempleo juvenil (14 a 24 años) es de {_f(_v(tasas_edad_laboral, \'tasa_desempleo\', grupo_edad_laboral=\'Joven (14-24)\'))}%, "'
+         'f"frente a {_f(_v(tasas_edad_laboral, \'tasa_desempleo\', grupo_edad_laboral=\'Resto\'))}% en el resto de la población activa"'),
+    35: ('f"La proporción de asalariados (empleados) va de {_f(situacion_por_sector[\'Empleado\'].min())}% en el sector {_res.etiqueta(situacion_por_sector[\'Empleado\'].idxmin()).lower()} "'
+         'f"a {_f(situacion_por_sector[\'Empleado\'].max())}% en el sector {_res.etiqueta(situacion_por_sector[\'Empleado\'].idxmax()).lower()}"'),
+    36: '_b(prevalencia_delito, \'tipo_delito\', \'pct\', \'En el último mes, la proporción de personas víctimas de cada tipo de delito\')',
+    37: 'f"Fueron víctimas de algún delito en el último mes el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'1-Hombre\'))}% de los hombres y el {_f(_v(victimizacion_sexo, \'pct\', sexo_grupo=\'2-Mujer\'))}% de las mujeres"',
+    38: '_b(victimizacion_depto, \'departamento\', \'pct\', \'Por departamento, la victimización en el último mes\')',
+    39: '_b(comunicacion_delito, \'tipo_delito\', \'pct\', \'Entre las víctimas, la comunicación a la policía\')',
+    40: '_b(denuncia_delito, \'tipo_delito\', \'pct\', \'Entre las víctimas, la denuncia formal\')',
+    41: ('f"En {int((comunicacion_delito.set_index(\'tipo_delito\')[\'pct\'] > denuncia_delito.set_index(\'tipo_delito\')[\'pct\']).sum())} de los "'
+         'f"{len(comunicacion_delito)} tipos de delito, más víctimas comunican el hecho a la policía de las que lo denuncian formalmente"'),
+    42: '_b(violencia_delito, \'tipo_delito\', \'pct\', \'La proporción de casos con violencia\')',
+}
+
+
+def celdas_resumen_analitico(metricas: list[int]) -> list[Celda]:
+    """La sección que cierra el informe: encabezado, una celda de código que
+    arma el resumen por bloque desde las variables de cada métrica presente
+    (salida en markdown; el código no se ve en el informe sin código), y la
     lista de fuentes de consulta de los bloques presentes."""
-    celdas = [Celda(markdown="## Resumen analítico final"), Celda(markdown=markdown_resumen.strip())]
-    fuentes = fuentes_de_consulta(bloques)
+    elegidas = sorted(set(metricas))
+    lineas = [
+        "from IPython.display import Markdown as _Markdown, display as _display",
+        "from encuesta_hogares import resumen as _res",
+        "_f, _v, _b = _res.fmt, _res.valor, _res.brecha",
+        "_frases = {}",
+    ]
+    for bloque, (rango, nombre) in verificacion_catalogo.BLOQUES.items():
+        for numero in elegidas:
+            if numero in rango and numero in _RESUMEN_POR_METRICA:
+                lineas += [
+                    "try:",
+                    f"    _frases.setdefault({nombre!r}, []).append({_RESUMEN_POR_METRICA[numero]})",
+                    "except Exception as _e:",
+                    f"    raise RuntimeError(f\"resumen de la métrica {numero}: {{_e}}\") from _e",
+                ]
+    lineas.append("_display(_Markdown(_res.armar_markdown(_frases)))")
+    celdas = [
+        Celda(markdown="## Resumen analítico final\n\nLas cifras de esta sección son las mismas que muestran "
+                       "las gráficas de cada métrica; las métricas a medida y las comparaciones entre años, si las hay, "
+                       "se leen en su propia sección.", codigo="\n".join(lineas)),
+    ]
+    bloques_presentes = [b for b, (rango, _n) in verificacion_catalogo.BLOQUES.items() if any(n in rango for n in elegidas)]
+    fuentes = fuentes_de_consulta(bloques_presentes)
     if fuentes:
-        lista = "\n".join(f"- {f}" for f in fuentes)
-        celdas.append(Celda(markdown="### Fuentes de consulta para alineación de métricas\n\n" + lista))
+        celdas.append(Celda(markdown="### Fuentes de consulta para alineación de métricas\n\n" + "\n".join(f"- {f}" for f in fuentes)))
     return celdas

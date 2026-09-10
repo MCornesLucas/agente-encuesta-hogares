@@ -4,8 +4,7 @@ escriba código ni ejecute el notebook más de una vez.
     run_python.bat -m encuesta_hogares.generar_informe construir --anio 2025 \
         --metricas 1,2,8,13 --bloques brecha_digital,hogares,territorio [--extra celdas.py]
 
-    run_python.bat -m encuesta_hogares.generar_informe entregar --anio 2025 \
-        --resumen resumen.md
+    run_python.bat -m encuesta_hogares.generar_informe entregar --anio 2025
 
 `construir`: arma el notebook con `notebook_builder` (más las celdas a
 medida del archivo `--extra`, si lo hay), lo VERIFICA antes de ejecutarlo
@@ -16,22 +15,24 @@ que solo se sabe después (celdas con error, gráficas sin imagen) y deja
 las cifras de cada métrica en `notebooks/_cifras_Informe_ECH_<año>.json`.
 Imprime un JSON con las rutas.
 
-`entregar`: toma el resumen analítico redactado (un archivo markdown que
-el modelo escribe leyendo el JSON de cifras), valida que cada cifra que
-cita exista de verdad en los resultados ejecutados (misma regla que
-`_lib_check_resumen_cifras_inventadas.cjs`, con las tablas del JSON como parte
-del respaldo), lo agrega al final del notebook junto con la lista de
-fuentes de consulta de los bloques presentes —sin volver a ejecutar
-nada—, y genera el HTML sin código y el PDF con portada, con copia en
-Descargas. Imprime un JSON con `pdf_path` y `html_path` para
-`formularios.mostrar_finalizacion`.
+El resumen analítico final lo arma el propio notebook, dentro de
+`construir`, con una plantilla de frase por métrica evaluada sobre las
+variables que cada métrica dejó (`notebook_builder._RESUMEN_POR_METRICA`,
+helpers en `resumen.py`): el número del resumen es el mismo que muestra la
+gráfica y ningún modelo redacta ni transcribe cifras. La lista de fuentes
+de consulta de los bloques presentes se agrega en el mismo paso.
 
-Por qué dos comandos y no uno: el resumen necesita las cifras reales, y
-las cifras solo existen después de ejecutar. Antes eso obligaba a
-ejecutar el notebook, redactar, insertar y ejecutar TODO de nuevo (1,68
-ejecuciones por corrida en la bitácora real, 150 s cada una en el informe
-de 42 métricas). Agregar markdown a un notebook ya ejecutado no requiere
-kernel, así que ahora la ejecución es exactamente una.
+`entregar`: genera el HTML sin código y el PDF con portada del notebook ya
+construido, con copia en Descargas, e imprime un JSON con `pdf_path` y
+`html_path` para `formularios.mostrar_finalizacion`. Acepta un
+`--comentario` opcional (markdown) que se agrega después del resumen con
+cada cifra validada contra los resultados ejecutados (misma regla que
+`_lib_check_resumen_cifras_inventadas.cjs`).
+
+Por qué dos comandos y no uno: la pantalla final necesita las rutas y la
+persona puede querer revisar el notebook entre un paso y otro; ninguno
+de los dos vuelve a ejecutar el notebook (1,68 ejecuciones por corrida en
+la bitácora real hasta la v0.13.6, 150 s cada una).
 
 Cada paso pesado queda medido en la bitácora con los mismos nombres de
 siempre (`ejecucion_notebook`, `generacion_html`, `conversion_pdf`), así
@@ -49,6 +50,7 @@ import json
 import re
 import runpy
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -139,6 +141,10 @@ def construir(
         nota = celdas.pop()
         celdas.extend(celdas_finales)
         celdas.append(nota)
+        # El resumen analítico se arma dentro del notebook, desde las
+        # variables de cada métrica, y las fuentes de consulta salen de los
+        # bloques presentes: nada de esto lo redacta el modelo.
+        celdas.extend(nb.celdas_resumen_analitico(metricas))
         celdas.append(nb.celda_cifras(destino))
         nb.escribir_notebook(celdas, destino)
 
@@ -148,9 +154,17 @@ def construir(
         bitacora.registrar("verificacion_notebook_bloqueo", etapa="antes_de_ejecutar", problemas=problemas)
         raise InformeInvalido("El notebook no se ejecutó porque no pasa la verificación previa:\n- " + "\n- ".join(problemas))
 
-    bitacora.medir_comando("ejecucion_notebook", [
-        sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace", str(destino),
-    ])
+    try:
+        bitacora.medir_comando("ejecucion_notebook", [
+            sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace", str(destino),
+        ])
+    except subprocess.CalledProcessError:
+        # nbconvert corta en la primera celda con error y deja el notebook
+        # escrito hasta ahí: se informa la celda y el error, no el traceback
+        # de subprocess.
+        errores = verificacion_notebook.celdas_con_error(_leer(destino)) or ["la ejecución falló sin dejar una celda con error legible"]
+        bitacora.registrar("verificacion_notebook_bloqueo", etapa="ejecucion", problemas=errores)
+        raise InformeInvalido("El notebook falló al ejecutarse:\n- " + "\n- ".join(errores)) from None
 
     notebook = _leer(destino)
     problemas = verificacion_notebook.verificar_despues_de_ejecutar(notebook)
@@ -209,9 +223,10 @@ def _leer(ruta: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _agregar_resumen(destino: Path, markdown_resumen: str) -> list[str]:
-    """Valida el resumen contra los resultados ejecutados y lo agrega al
-    notebook (sin ejecutar). Devuelve los bloques presentes."""
+def _agregar_comentario(destino: Path, markdown_resumen: str) -> list[str]:
+    """Valida el comentario opcional contra los resultados ejecutados y lo
+    agrega al final del notebook (sin ejecutar). Devuelve los bloques
+    presentes. El resumen analítico en sí ya lo armó el propio notebook."""
     notebook = nbformat.read(str(destino), as_version=4)
     crudo = _leer(destino)
     if verificacion_notebook.celdas_con_error(crudo):
@@ -221,7 +236,7 @@ def _agregar_resumen(destino: Path, markdown_resumen: str) -> list[str]:
 
     placeholders = verificacion_notebook.placeholders_en_el_texto({"cells": [{"cell_type": "markdown", "source": markdown_resumen}]})
     if placeholders:
-        raise InformeInvalido("El resumen tiene texto sin completar: " + "; ".join(placeholders))
+        raise InformeInvalido("El comentario tiene texto sin completar: " + "; ".join(placeholders))
 
     extra: list[float] = []
     cifras = nb.ruta_cifras(destino)
@@ -232,7 +247,7 @@ def _agregar_resumen(destino: Path, markdown_resumen: str) -> list[str]:
     if sospechosas:
         bitacora.registrar("verificacion_notebook_bloqueo", etapa="resumen", cifras=sospechosas)
         raise InformeInvalido(
-            "El resumen cita cifras que no aparecen en ningún resultado del notebook ni en el JSON de cifras: "
+            "El comentario cita cifras que no aparecen en ningún resultado del notebook ni en el JSON de cifras: "
             + ", ".join(sospechosas)
             + ". Sacar cada número del archivo de cifras, con los mismos decimales o redondeado."
         )
@@ -241,13 +256,12 @@ def _agregar_resumen(destino: Path, markdown_resumen: str) -> list[str]:
                        for m in [re.match(r"^###\s+(\d{1,2})\.", "".join(c.get("source", "")).strip())] if m})
     bloques = _bloques_de(metricas)
 
-    # Si ya había un resumen (entrega repetida), se reemplaza en vez de duplicarlo.
+    # Si ya había un comentario (entrega repetida), se reemplaza en vez de duplicarlo.
     indice = next((i for i, c in enumerate(notebook.cells)
-                   if c.cell_type == "markdown" and c.source.strip().startswith("## Resumen analítico final")), None)
+                   if c.cell_type == "markdown" and c.source.strip().startswith("### Comentario")), None)
     if indice is not None:
         notebook.cells = notebook.cells[:indice]
-    for celda in nb.celdas_resumen_final(markdown_resumen, bloques):
-        notebook.cells.append(nbformat.v4.new_markdown_cell(celda.markdown))
+    notebook.cells.append(nbformat.v4.new_markdown_cell(nb.celda_comentario(markdown_resumen).markdown))
     nbformat.write(notebook, str(destino))
     return bloques
 
@@ -349,14 +363,23 @@ def _copiar_a_descargas(pdf: Path) -> Path | None:
     return copia
 
 
-def entregar(anio: int, resumen: Path, destino: Path | None = None) -> dict:
+def entregar(anio: int, comentario: Path | None = None, destino: Path | None = None) -> dict:
     destino = destino or ruta_notebook(anio)
     if not destino.exists():
         raise InformeInvalido(f"No existe {destino}: correr `construir` primero.")
-    markdown = resumen.read_text(encoding="utf-8")
-    if not markdown.strip():
-        raise InformeInvalido(f"{resumen} está vacío: el resumen analítico es obligatorio.")
-    bloques = _agregar_resumen(destino, markdown)
+    crudo = _leer(destino)
+    if verificacion_notebook.celdas_con_error(crudo):
+        raise InformeInvalido("El notebook tiene celdas con error: corregir y volver a `construir` antes de entregar.")
+    if not any(c.get("outputs") for c in crudo["cells"] if c.get("cell_type") == "code"):
+        raise InformeInvalido("El notebook no está ejecutado: correr `construir` antes de `entregar`.")
+    if verificacion_notebook.resumen_sin_texto(crudo):
+        raise InformeInvalido("El notebook no tiene el resumen analítico armado: volver a `construir`.")
+    if comentario is not None:
+        markdown = comentario.read_text(encoding="utf-8")
+        if markdown.strip():
+            _agregar_comentario(destino, markdown)
+    bloques = _bloques_de(sorted({int(m.group(1)) for c in crudo["cells"] if c.get("cell_type") == "markdown"
+                                  for m in [re.match(r"^###\s+(\d{1,2})\.", "".join(c.get("source", "")).strip())] if m}))
     salida_html = _generar_html(destino, anio, destino.with_suffix(".html"))
     salida_pdf = _generar_pdf(salida_html, anio, destino.with_suffix(".pdf"))
     copia = _copiar_a_descargas(salida_pdf)
@@ -393,16 +416,17 @@ def main(argumentos: list[str] | None = None) -> int:
     c.add_argument("--extra", type=Path, default=None, help="archivo .py con celdas_extra y/o celdas_finales")
     c.add_argument("--motivo", default=None, help="por qué se vuelve a construir el mismo año (si aplica)")
 
-    e = sub.add_parser("entregar", help="agrega el resumen verificado y genera HTML y PDF")
+    e = sub.add_parser("entregar", help="genera HTML y PDF del notebook ya construido (el resumen ya está en él)")
     e.add_argument("--anio", type=int, required=True)
-    e.add_argument("--resumen", type=Path, required=True, help="archivo markdown con el resumen analítico")
+    e.add_argument("--comentario", type=Path, default=None,
+                   help="opcional: archivo markdown con un comentario adicional; cada cifra se valida contra los resultados")
 
     args = parser.parse_args(argumentos)
     try:
         if args.comando == "construir":
             resultado = construir(args.anio, args.metricas, args.bloques, args.extra, args.motivo)
         else:
-            resultado = entregar(args.anio, args.resumen)
+            resultado = entregar(args.anio, args.comentario)
     except InformeInvalido as e:
         print(f"INFORME NO GENERADO: {e}", file=sys.stderr)
         return 2
