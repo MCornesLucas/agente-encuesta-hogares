@@ -54,3 +54,7 @@ dist/
 
 # Editor
 *.log
+
+# Notebooks heredados del análisis original, archivados localmente al limpiar
+# la carpeta (2026-09-09): tampoco se distribuyen.
+notebooks/heredados/
